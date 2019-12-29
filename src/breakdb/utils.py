@@ -2,6 +2,7 @@
 Contains classes and functions that are intended as utilities.
 """
 import logging
+import os
 import string
 import sys
 from itertools import zip_longest
@@ -99,3 +100,19 @@ def initialize_logging(quiet, use_color, verbose):
     logger.addHandler(console_handler)
 
     logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+
+
+def supports_color_output():
+    """
+    Performs a minor check to determine whether or not the current output
+    device (usually a terminal) supports ANSI color codes.
+
+    :return: Whether or not ANSI color codes are supported.
+    """
+    has_ansi_term = 'TERM' in os.environ and os.environ['TERM'] == 'ANSI'
+    has_tty_output = False
+
+    for handle in [sys.stdout, sys.stderr]:
+        has_tty_output &= handle.isatty()
+
+    return has_ansi_term or has_tty_output
