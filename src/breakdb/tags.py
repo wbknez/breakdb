@@ -7,10 +7,10 @@ from pydicom.tag import Tag
 
 
 @unique
-class PointTags(Enum):
+class GraphicTags(Enum):
     """
-    Represents a collection of DICOM tags that specify the geometry of an
-    annotation.
+    Represents a collection of DICOM tags that specify the geometry of a
+    single graphical annotation.
     """
 
     Count = Tag(0x0070, 0x0021)
@@ -39,4 +39,31 @@ class PointTags(Enum):
     Represents the type of geometry.
     
     For this project, this should always be "POLYLINE".    
+    """
+
+
+@unique
+class ReferenceTags(Enum):
+    """
+    Represents a collection of DICOM tags that specify how one DICOM
+    may reference information contained in another.
+    """
+
+    Class = Tag(0x0008, 0x1150)
+    """
+    Represents the (unique) SOP class identifier.            
+    """
+
+    Instance = Tag(0x0008, 0x1155)
+    """
+    Represents the (unique) SOP instance identifier.
+    
+    This tag is unique per file.
+    """
+
+    Series = Tag(0x0020, 0x000e)
+    """
+    Represents the (unique) series identifier.
+        
+    This tag is unique per series.
     """
