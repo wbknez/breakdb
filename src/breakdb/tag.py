@@ -7,6 +7,33 @@ from pydicom.tag import Tag
 
 
 @unique
+class CommonTag(Enum):
+    """
+    Represents a collection of DICOM tags that every file used as input to
+    this project must have.
+    """
+
+    CLASS = Tag(0x0008, 0x0016)
+    """
+    Represents the (unique) SOP class identifier.
+    """
+
+    INSTANCE = Tag(0x0008, 0x0018)
+    """
+    Represents the (unique) SOP instance identifier.
+    
+    This tag is unique per file.
+    """
+
+    SERIES = Tag(0x0020, 0x000e)
+    """
+    Represents the (unique) series identifier.
+    
+    This tag is unique per series.
+    """
+
+
+@unique
 class GraphicTag(Enum):
     """
     Represents a collection of DICOM tags that specify the geometry of a
@@ -29,7 +56,7 @@ class GraphicTag(Enum):
     DIMENSIONS = Tag(0x0070, 0x0020)
     """
     Represents the planar dimensions (one dimensional, two dimensional, 
-    etc.).
+    etc.) coordinates are given as.
     
     For this project, this should always be "2".
     """
