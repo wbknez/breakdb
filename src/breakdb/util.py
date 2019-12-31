@@ -102,6 +102,67 @@ def initialize_logging(quiet, use_color, verbose):
     logger.setLevel(logging.DEBUG if verbose else logging.INFO)
 
 
+def format_dataset(ds, indent=0, hide_code=False, hide_desc=False,
+                   hide_value=False, top_level=False, flat=False,
+                   use_color=True):
+    """
+    Returns the specified DICOM dataset as a printable string.
+
+    :param ds: The dataset to format.
+    :param indent: The indentation level.
+    :param hide_code: Whether or not to display hexadecimal tag codes.
+    :param hide_desc: Whether or not to display tag descriptions.
+    :param hide_value: Whether or not to display tag values.
+    :param top_level: Whether or not to only display top-level tags.
+    :param flat: Whether or not to disable indentation entirely.
+    :param use_color: Whether or not to use ANSI color codes.
+    :return: A DICOM dataset as a formatted string.
+    """
+    def describe_element(elem):
+        return elem.description()[:elem.descripWidth].ljust(elem.descripWidth)
+
+    def format_element(elem):
+        return "{}{}{}{}{}{}{}".format(
+            "\033[1;37m" if use_color else "",
+            str(elem.tag) if not hide_code else "",
+            "\033[0m" if use_color else "",
+            " " if not hide_code else "",
+            describe_element(elem) if not hide_desc else "",
+            " " if not hide_desc else "",
+            elem.repval if not hide_value else "",
+        )
+
+    def format_sequence(seq):
+        return "{}{}{}{}{}{}{} {}".format(
+            "\033[1;37m" if use_color else "",
+            str(seq.tag) if not hide_code else "",
+            "\033[0m" if use_color else "",
+            " " if not hide_code else "",
+            seq.description() if not hide_desc else "",
+            "   " if not hide_desc else "",
+            str(len(seq.value)) if not hide_value else "",
+            " item(s)" if not hide_value else ""
+        )
+
+    indent_str = "   " * indent if not flat else ""
+    output = []
+
+    for data in ds:
+        if data.VR == "SQ":
+            output.append(f"{indent_str}{format_sequence(data)}")
+
+            if not top_level:
+                for value in data:
+                    output.append(format_dataset(value, indent + 1, hide_code,
+                                                 hide_desc,
+                                                 hide_value, top_level,
+                                                 flat, use_color))
+        else:
+            output.append(f"{indent_str}{format_element(data)}")
+
+    return "\n".join(output)
+
+
 def supports_color_output():
     """
     Performs a minor check to determine whether or not the current output
@@ -110,7 +171,7 @@ def supports_color_output():
     :return: Whether or not ANSI color codes are supported.
     """
     has_ansi_term = 'TERM' in os.environ and os.environ['TERM'] == 'ANSI'
-    has_tty_output = False
+    has_tty_output = True
 
     for handle in [sys.stdout, sys.stderr]:
         has_tty_output &= handle.isatty()
