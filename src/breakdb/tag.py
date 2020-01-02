@@ -7,18 +7,36 @@ from pydicom.tag import Tag
 
 
 @unique
+class AnnotationTag(Enum):
+    """
+    Represents a collection of DICOM tags that indicate one or more
+    annotations are contained in a file.
+    """
+
+    OBJECT = Tag(0x0008, 0x0009)
+    """
+    Represents a single annotation.
+    """
+
+    SEQUENCE = Tag(0x0008, 0x0001)
+    """
+    Represents a collection of  annotations.    
+    """
+
+
+@unique
 class CommonTag(Enum):
     """
     Represents a collection of DICOM tags that every file used as input to
     this project must have.
     """
 
-    CLASS = Tag(0x0008, 0x0016)
+    SOP_CLASS = Tag(0x0008, 0x0016)
     """
     Represents the (unique) SOP class identifier.
     """
 
-    INSTANCE = Tag(0x0008, 0x0018)
+    SOP_INSTANCE = Tag(0x0008, 0x0018)
     """
     Represents the (unique) SOP instance identifier.
     
@@ -110,16 +128,14 @@ class ReferenceTag(Enum):
     may reference information contained in another.
     """
 
-    CLASS = Tag(0x0008, 0x1150)
+    OBJECT = Tag(0x0008, 0x1140)
     """
-    Represents the (unique) SOP class identifier.            
+    Represents a single reference to another DICOM file.
     """
 
-    INSTANCE = Tag(0x0008, 0x1155)
+    SEQUENCE = Tag(0x0008, 0x1115)
     """
-    Represents the (unique) SOP instance identifier.
-    
-    This tag is unique per file.
+    Represents a collection of references to other DICOM files.    
     """
 
     SERIES = Tag(0x0020, 0x000e)
@@ -127,4 +143,16 @@ class ReferenceTag(Enum):
     Represents the (unique) series identifier.
         
     This tag is unique per series.
+    """
+
+    SOP_CLASS = Tag(0x0008, 0x1150)
+    """
+    Represents the (unique) SOP class identifier.            
+    """
+
+    SOP_INSTANCE = Tag(0x0008, 0x1155)
+    """
+    Represents the (unique) SOP instance identifier.
+    
+    This tag is unique per file.
     """
