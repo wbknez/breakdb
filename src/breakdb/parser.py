@@ -118,10 +118,14 @@ def parse_common(ds):
 
 def parse_reference(ds):
     """
+    Parses and returns a dictionary of the values of all tags associated
+    with one DICOM referencing another for this project.
 
-    :param ds:
-    :return:
-    :raises MissingTag:
+    :param ds: The dataset to search.
+    :return: A dictionary of reference tag values.
+    :raises MalformedSequence: If a tag exists but is not a sequence.
+    :raises MissingSequence: If one or more sequence tags could not be found.
+    :raises MissingTag: If one or more tags could not be found.
     """
     seq = get_sequence_value(ds, 0, ReferenceTag.SEQUENCE)
     obj = get_sequence_value(seq, 0, ReferenceTag.OBJECT)
