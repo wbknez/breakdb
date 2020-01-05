@@ -5,7 +5,7 @@ references work as intended.
 import pytest
 
 from breakdb.parser import has_reference, parse_reference, get_sequence_value, \
-    MissingTag, MalformedSequence
+    MissingTag, MissingSequence, MalformedSequence
 from breakdb.tag import ReferenceTag
 from tests.helpers.assertion import match
 
@@ -46,6 +46,15 @@ class TestParseReference:
         match(obj, parsed["ref"], ReferenceTag.SOP_CLASS)
         match(obj, parsed["ref"], ReferenceTag.SOP_INSTANCE)
         match(seq, parsed["ref"], ReferenceTag.SERIES)
+
+    def test_parse_reference_throws_when_sequence_is_missing(self,
+                                                             create_dataset):
+        ds = create_dataset()
+
+        del ds[ReferenceTag.SEQUENCE.value]
+
+        with pytest.raises(MissingSequence):
+            parse_reference(ds)
 
     def test_parse_reference_throws_when_object_is_missing(self,
                                                            create_dataset):
