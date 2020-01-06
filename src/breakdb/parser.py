@@ -91,14 +91,18 @@ def has_annotation(ds):
     :param ds: The dataset to search.
     :return: Whether or not a DICOM annotation sequence is present.
     """
-    if not has_tag(ds, AnnotationTag.SEQUENCE):
-        return False
+    if has_tag(ds, AnnotationTag.SEQUENCE):
+        for item in get_tag_value(ds, AnnotationTag.SEQUENCE):
+            if has_tag(item, AnnotationTag.OBJECT):
+                for obj in get_tag_value(item, AnnotationTag.OBJECT):
+                    if has_tag(obj, AnnotationTag.COUNT) and \
+                            has_tag(obj, AnnotationTag.DATA) and \
+                            has_tag(obj, AnnotationTag.DIMENSIONS) and \
+                            has_tag(obj, AnnotationTag.TYPE) and \
+                            has_tag(obj, AnnotationTag.UNITS):
+                        return True
 
-    seq = get_tag_value(ds, AnnotationTag.SEQUENCE)
-
-    for item in seq:
-        if has_tag(item, AnnotationTag.OBJECT):
-            obj = get_tag_value(item, AnnotationTag.OBJECT)
+    return False
 
 
 def has_reference(ds):
