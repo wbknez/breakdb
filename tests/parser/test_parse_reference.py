@@ -29,8 +29,7 @@ class TestParseReference:
 
         assert not has_reference(ds)
 
-    def test_has_reference_is_true_when_reference_is_present(self,
-                                                             create_dataset):
+    def test_has_reference_succeeds(self, create_dataset):
         ds = create_dataset()
 
         assert has_reference(ds)
