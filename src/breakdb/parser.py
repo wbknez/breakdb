@@ -2,7 +2,7 @@
 Contains classes and functions concerning the parsing of DICOM metadata into
 usable programmatic structures.
 """
-from breakdb.tag import CommonTag, ReferenceTag
+from breakdb.tag import CommonTag, ReferenceTag, AnnotationTag
 
 
 class MalformedSequence(Exception):
@@ -58,7 +58,7 @@ def get_sequence_value(ds, index, tag):
     sequence.
     :raises MissingSequence: If the requested tag could not be found.
     """
-    if tag.value not in ds:
+    if not has_tag(ds, tag):
         raise MissingSequence(tag)
 
     if ds[tag.value].VR != 'SQ' or len(ds[tag.value].value) <= index:
@@ -77,10 +77,28 @@ def get_tag_value(ds, tag):
     :return: The value associated with a tag.
     :raises MissingTag: If the requested tag could not be found.
     """
-    if tag.value not in ds:
+    if not has_tag(ds, tag):
         raise MissingTag(tag)
 
     return ds[tag.value]
+
+
+def has_annotation(ds):
+    """
+    Returns whether or not the specified DICOM dataset contains at least one
+    (image) annotation.
+
+    :param ds: The dataset to search.
+    :return: Whether or not a DICOM annotation sequence is present.
+    """
+    if not has_tag(ds, AnnotationTag.SEQUENCE):
+        return False
+
+    seq = get_tag_value(ds, AnnotationTag.SEQUENCE)
+
+    for item in seq:
+        if has_tag(item, AnnotationTag.OBJECT):
+            obj = get_tag_value(item, AnnotationTag.OBJECT)
 
 
 def has_reference(ds):
@@ -88,12 +106,26 @@ def has_reference(ds):
     Returns whether or not the specified DICOM dataset contains a reference to
     another.
 
+    For purposes of this project, only one reference is allowed to be present.
+
     :param ds: The dataset to search.
     :return: Whether or not a DICOM reference sequence is present.
     """
-    return ReferenceTag.SEQUENCE.value in ds and \
+    return has_tag(ds, ReferenceTag.SEQUENCE) and \
         len(get_tag_value(ds, ReferenceTag.SEQUENCE).value) == 1 and \
         len(get_sequence_value(ds, 0, ReferenceTag.SEQUENCE)) == 2
+
+
+def has_tag(ds, tag):
+    """
+    Returns whether or not the specified tag is present in the specified
+    dataset.
+
+    :param ds: The dataset to search.
+    :param tag: The tag to search for.
+    :return: Whether or not a DICOM tag is present.
+    """
+    return tag.value in ds
 
 
 def parse_common(ds):
