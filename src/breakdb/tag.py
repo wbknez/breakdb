@@ -9,8 +9,29 @@ from pydicom.tag import Tag
 @unique
 class AnnotationTag(Enum):
     """
-    Represents a collection of DICOM tags that indicate one or more
-    annotations are contained in a file.
+    Represents a collection of DICOM tags that indicate whether one or more
+    annotations are contained in a file and the data they may contain.
+    """
+
+    COUNT = Tag(0x0070, 0x0021)
+    """
+    Represents the number of individual points that comprise a geometry.
+    
+    For this project, this should always be "5" for an closed quadrilateral.
+    """
+
+    DATA = Tag(0x0070, 0x0022)
+    """
+    Represents the individual points as a pair of two-dimensional coordinates 
+    that comprise a geometry.    
+    """
+
+    DIMENSIONS = Tag(0x0070, 0x0020)
+    """
+    Represents the planar dimensions (one dimensional, two dimensional, 
+    etc.) coordinates are given as.
+    
+    For this project, this should always be "2".
     """
 
     OBJECT = Tag(0x0008, 0x0009)
@@ -21,6 +42,20 @@ class AnnotationTag(Enum):
     SEQUENCE = Tag(0x0008, 0x0001)
     """
     Represents a collection of  annotations.    
+    """
+
+    TYPE = Tag(0x0070, 0x0023)
+    """
+    Represents the type of geometry.
+    
+    For this project, this should always be "POLYLINE".    
+    """
+
+    UNITS = Tag(0x0070, 0x0005)
+    """
+    Represents the dimension metric.
+    
+    For this project, this should always be "PIXEL".
     """
 
 
@@ -48,42 +83,6 @@ class CommonTag(Enum):
     Represents the (unique) series identifier.
     
     This tag is unique per series.
-    """
-
-
-@unique
-class GraphicTag(Enum):
-    """
-    Represents a collection of DICOM tags that specify the geometry of a
-    single graphical annotation.
-    """
-
-    COUNT = Tag(0x0070, 0x0021)
-    """
-    Represents the number of individual points that comprise a geometry.
-    
-    For this project, this should always be "5" for an closed quadrilateral.
-    """
-
-    DATA = Tag(0x0070, 0x0022)
-    """
-    Represents the individual points as a pair of two-dimensional coordinates 
-    that comprise a geometry.    
-    """
-
-    DIMENSIONS = Tag(0x0070, 0x0020)
-    """
-    Represents the planar dimensions (one dimensional, two dimensional, 
-    etc.) coordinates are given as.
-    
-    For this project, this should always be "2".
-    """
-
-    TYPE = Tag(0x0070, 0x0023)
-    """
-    Represents the type of geometry.
-    
-    For this project, this should always be "POLYLINE".    
     """
 
 
