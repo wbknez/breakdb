@@ -34,12 +34,12 @@ class AnnotationTag(Enum):
     For this project, this should always be "2".
     """
 
-    OBJECT = Tag(0x0008, 0x0009)
+    OBJECT = Tag(0x0070, 0x0009)
     """
     Represents a single annotation.
     """
 
-    SEQUENCE = Tag(0x0008, 0x0001)
+    SEQUENCE = Tag(0x0070, 0x0001)
     """
     Represents a collection of  annotations.    
     """
