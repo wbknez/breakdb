@@ -30,6 +30,30 @@ def create_dataset():
 
     :return: A factory function to create a random DICOM dataset.
     """
+    def create_annotation():
+        ds = Dataset()
+        xs = np.random.randint(1, 2000, 2)
+        ys = np.random.randint(1, 2000, 2)
+
+        ds.GraphicAnnotationUnits = 'PIXEL'
+        ds.GraphicDimensions = 2
+        ds.NumberOfGraphicPoints = 5
+        ds.GraphicData = [xs[0], ys[0], xs[1], ys[0], xs[1], ys[1], xs[0],
+                          ys[1], xs[0], ys[0]]
+        ds.GraphicType = "POLYLINE"
+
+        return ds
+
+    def create_annotations(n=1):
+        ds = Dataset()
+
+        ds.GraphicLayer = "DRAW"
+        ds.GraphicObjectSequence = Sequence([
+            create_annotation() for _ in range(n)
+        ])
+
+        return ds
+
     def create_reference(uid):
         ds = Dataset()
 
@@ -48,7 +72,8 @@ def create_dataset():
 
         return ds
 
-    def create_dataset_impl(prefix=PYDICOM_ROOT_UID, n=20, excludes=None):
+    def create_dataset_impl(prefix=PYDICOM_ROOT_UID, n=20, excludes=None,
+                            annotations=1):
         """
         Create a DICOM dataset with randomized values for all possible
         project-specific tags.
@@ -66,6 +91,9 @@ def create_dataset():
         ds.SOPInstanceUID = uid()
         ds.SeriesInstanceUID = uid()
 
+        ds.GraphicAnnotationSequence = Sequence([
+            create_annotations(annotations)
+        ])
         ds.ReferencedSeriesSequence = Sequence([
             create_reference_sequence(uid)
         ])
