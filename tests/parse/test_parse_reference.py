@@ -4,7 +4,7 @@ references work as intended.
 """
 import pytest
 
-from breakdb.parser import has_reference, parse_reference, get_sequence_value, \
+from breakdb.parse import has_reference, parse_reference, get_sequence_value, \
     MissingTag, MissingSequence, MalformedSequence
 from breakdb.tag import ReferenceTag
 from tests.helpers.assertion import match

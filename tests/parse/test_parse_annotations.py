@@ -5,7 +5,7 @@ references work as intended.
 import numpy as np
 import pytest
 
-from breakdb.parser import has_annotations, get_sequence_value, has_annotation, \
+from breakdb.parse import has_annotations, get_sequence_value, has_annotation, \
     parse_annotation, MissingTag, parse_annotations, get_tag_value
 from breakdb.tag import AnnotationTag
 from tests.helpers.assertion import match
