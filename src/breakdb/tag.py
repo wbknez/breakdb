@@ -1,5 +1,5 @@
 """
-Contains classes and functions related to working with DICOM tags and metadata.
+Contains classes and functions related to working with DICOM metadata tags.
 """
 from enum import Enum, unique
 
@@ -155,3 +155,126 @@ class ReferenceTag(Enum):
     
     This tag is unique per file.
     """
+
+
+class MalformedSequence(Exception):
+    """
+    Represents an exception that is raised when an expected sequence is
+    present but not formatted correctly.
+    """
+
+    def __init__(self, tag):
+        super().__init__(f"{tag} is not a valid sequence.")
+
+
+class MissingSequence(Exception):
+    """
+    Represents an exception that is raised when an expected sequence is
+    missing.
+    """
+
+    def __init__(self, tag):
+        super().__init__(f"{tag} is present but not a sequence.")
+
+
+class MissingTag(Exception):
+    """
+    Represents an exception that is raised when an expected tag is missing.
+    """
+
+    def __init__(self, tag):
+        super().__init__(f"{tag} is expected but missing.")
+
+
+def get_sequence(ds, tag):
+    """
+    Returns the sequence associated with the specified tag in the specified
+    dataset.
+
+    :param ds: The dataset to read.
+    :param tag: The tag to find.
+    :return: The sequence associated with a tag.
+    :raises MalformedSequence: If the value associated with the requested
+    tag is not a sequence.
+    :raises MissingSequence: If the requested sequence could not be found.
+    """
+    if not has_tag(ds, tag):
+        raise MissingSequence(tag)
+
+    if ds[tag.value].VR != 'SQ':
+        raise MalformedSequence(tag)
+
+    return ds[tag.value]
+
+
+def get_tag(ds, tag):
+    """
+    Returns the value associated with the specified tag in the specified
+    dataset.
+
+    :param ds: The dataset to read.
+    :param tag: The tag to find.
+    :return: The value associated with a tag.
+    :raises MissingTag: If the requested tag could not be found.
+    """
+    if not has_tag(ds, tag):
+        raise MissingTag(tag)
+
+    return ds[tag.value]
+
+
+def get_tag_at(ds, index, tag):
+    """
+    Returns the value associated with the specified tag in a sequence
+    contained in the specified dataset.
+
+    :param ds: The dataset to read.
+    :param index: The index to use.
+    :param tag: The tag to find.
+    :return: The value associated with a tag in a sequence.
+    :raises MalformedSequence: If the requested tag exists but is not a
+    sequence.
+    :raises MissingSequence: If the requested tag could not be found.
+    """
+    if not has_tag(ds, tag):
+        raise MissingSequence(tag)
+
+    if ds[tag.value].VR != 'SQ' or len(ds[tag.value].value) <= index:
+        raise MalformedSequence(tag)
+
+    return ds[tag.value][index]
+
+
+def has_sequence(ds, tag):
+    """
+    Returns whether or not a sequence with the specified tag is present in the
+    specified dataset.
+
+    :param ds: The dataset to search.
+    :param tag: The tag to search for.
+    :return: Whether or not a DICOM sequence is present.
+    """
+    return tag.value in ds and ds[tag.value].VR == 'SQ'
+
+
+def has_tag(ds, tag):
+    """
+    Returns whether or not the specified tag is present in the specified
+    dataset.
+
+    :param ds: The dataset to search.
+    :param tag: The tag to search for.
+    :return: Whether or not a DICOM tag is present.
+    """
+    return tag.value in ds
+
+
+def make_tag_dict(*values):
+    """
+    Converts the specified collection of tag values into a dictionary
+    associated by tags.
+
+    :param values: The collection of tag values to use.
+    :return: A dictionary of tags and their associated values.
+    """
+    return {value.tag: value.value for value in values}

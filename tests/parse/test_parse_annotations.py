@@ -5,9 +5,10 @@ references work as intended.
 import numpy as np
 import pytest
 
-from breakdb.parse import has_annotations, get_sequence_value, has_annotation, \
-    parse_annotation, MissingTag, parse_annotations, get_tag_value
-from breakdb.tag import AnnotationTag
+from breakdb.parse import has_annotations, has_annotation, \
+    parse_annotation, parse_annotations
+from breakdb.tag import AnnotationTag, get_tag, get_tag_at, \
+    MissingTag, MissingSequence
 from tests.helpers.assertion import match
 
 
@@ -21,8 +22,8 @@ class TestParseAnnotations:
     def test_has_annotation_succeeds(self, create_dataset):
         ds = create_dataset(annotations=1)
 
-        seq = get_sequence_value(ds, 0, AnnotationTag.SEQUENCE)
-        obj = get_sequence_value(seq, 0, AnnotationTag.OBJECT)
+        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
+        obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
 
         assert has_annotation(obj)
 
@@ -41,8 +42,8 @@ class TestParseAnnotations:
                                                            create_dataset):
         ds = create_dataset(annotations=1)
 
-        seq = get_sequence_value(ds, 0, AnnotationTag.SEQUENCE)
-        obj = get_sequence_value(seq, 0, AnnotationTag.OBJECT)
+        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
+        obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
 
         del obj[AnnotationTag.COUNT.value]
 
@@ -53,8 +54,8 @@ class TestParseAnnotations:
                                                           create_dataset):
         ds = create_dataset(annotations=1)
 
-        seq = get_sequence_value(ds, 0, AnnotationTag.SEQUENCE)
-        obj = get_sequence_value(seq, 0, AnnotationTag.OBJECT)
+        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
+        obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
 
         del obj[AnnotationTag.DATA.value]
 
@@ -65,8 +66,8 @@ class TestParseAnnotations:
                                                                 create_dataset):
         ds = create_dataset(annotations=1)
 
-        seq = get_sequence_value(ds, 0, AnnotationTag.SEQUENCE)
-        obj = get_sequence_value(seq, 0, AnnotationTag.OBJECT)
+        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
+        obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
 
         del obj[AnnotationTag.DIMENSIONS.value]
 
@@ -77,8 +78,8 @@ class TestParseAnnotations:
                                                           create_dataset):
         ds = create_dataset(annotations=1)
 
-        seq = get_sequence_value(ds, 0, AnnotationTag.SEQUENCE)
-        obj = get_sequence_value(seq, 0, AnnotationTag.OBJECT)
+        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
+        obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
 
         del obj[AnnotationTag.TYPE.value]
 
@@ -89,8 +90,8 @@ class TestParseAnnotations:
                                                            create_dataset):
         ds = create_dataset(annotations=1)
 
-        seq = get_sequence_value(ds, 0, AnnotationTag.SEQUENCE)
-        obj = get_sequence_value(seq, 0, AnnotationTag.OBJECT)
+        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
+        obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
 
         del obj[AnnotationTag.UNITS.value]
 
@@ -100,8 +101,8 @@ class TestParseAnnotations:
     def test_parse_annotation_succeeds(self, create_dataset):
         ds = create_dataset(annotations=1)
 
-        seq = get_sequence_value(ds, 0, AnnotationTag.SEQUENCE)
-        obj = get_sequence_value(seq, 0, AnnotationTag.OBJECT)
+        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
+        obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
 
         parsed = parse_annotation(obj)
 
@@ -118,8 +119,8 @@ class TestParseAnnotations:
         parsed = parse_annotations(ds)
         annots = parsed["annotations"]
 
-        seq = get_sequence_value(ds, 0, AnnotationTag.SEQUENCE)
-        obj = get_sequence_value(seq, 0, AnnotationTag.OBJECT)
+        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
+        obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
 
         assert len(annots) == 1
         match(obj, annots[0], AnnotationTag.COUNT)
@@ -136,8 +137,8 @@ class TestParseAnnotations:
         parsed = parse_annotations(ds)
         annots = parsed["annotations"]
 
-        seq = get_sequence_value(ds, 0, AnnotationTag.SEQUENCE)
-        objs = get_tag_value(seq, AnnotationTag.OBJECT)
+        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
+        objs = get_tag(seq, AnnotationTag.OBJECT)
 
         assert len(annots) == n
 
@@ -152,6 +153,6 @@ class TestParseAnnotations:
                                                                create_dataset):
         ds = create_dataset(excludes=[AnnotationTag.SEQUENCE])
 
-        with pytest.raises(MissingTag):
+        with pytest.raises(MissingSequence):
             parse_annotations(ds)
 

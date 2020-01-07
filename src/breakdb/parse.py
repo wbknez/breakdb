@@ -2,85 +2,8 @@
 Contains classes and functions concerning the parsing of DICOM metadata into
 usable programmatic structures.
 """
-from breakdb.tag import CommonTag, ReferenceTag, AnnotationTag
-
-
-class MalformedSequence(Exception):
-    """
-    Represents an exception that is raised when an expected sequence is
-    present but not formatted correctly.
-    """
-
-    def __init__(self, tag):
-        super().__init__(f"{tag} is not a valid sequence.")
-
-
-class MissingSequence(Exception):
-    """
-    Represents an exception that is raised when an expected sequence is
-    missing.
-    """
-
-    def __init__(self, tag):
-        super().__init__(f"{tag} is present but not a sequence.")
-
-
-class MissingTag(Exception):
-    """
-    Represents an exception that is raised when an expected tag is missing.
-    """
-
-    def __init__(self, tag):
-        super().__init__(f"{tag} is expected but missing.")
-
-
-def _make_tag_dict(*values):
-    """
-    Converts the specified collection of tag values into a dictionary
-    associated by tags.
-
-    :param values: The collection of tag values to use.
-    :return: A dictionary of tags and their associated values.
-    """
-    return {value.tag: value.value for value in values}
-
-
-def get_sequence_value(ds, index, tag):
-    """
-    Returns the value associated with the specified tag in a sequence
-    contained in the specified dataset.
-
-    :param ds: The dataset to read.
-    :param index: The index to use.
-    :param tag: The tag to find.
-    :return: The value associated with a tag in a sequence.
-    :raises MalformedSequence: If the requested tag exists but is not a
-    sequence.
-    :raises MissingSequence: If the requested tag could not be found.
-    """
-    if not has_tag(ds, tag):
-        raise MissingSequence(tag)
-
-    if ds[tag.value].VR != 'SQ' or len(ds[tag.value].value) <= index:
-        raise MalformedSequence(tag)
-
-    return ds[tag.value][index]
-
-
-def get_tag_value(ds, tag):
-    """
-    Returns the value associated with the specified tag in the specified
-    dataset.
-
-    :param ds: The dataset to read.
-    :param tag: The tag to find.
-    :return: The value associated with a tag.
-    :raises MissingTag: If the requested tag could not be found.
-    """
-    if not has_tag(ds, tag):
-        raise MissingTag(tag)
-
-    return ds[tag.value]
+from breakdb.tag import CommonTag, ReferenceTag, AnnotationTag, get_tag, \
+    get_tag_at, make_tag_dict, has_tag, get_sequence, has_sequence
 
 
 def has_annotation(ds):
@@ -105,10 +28,10 @@ def has_annotations(ds):
     :param ds: The dataset to search.
     :return: Whether or not a DICOM annotation sequence is present.
     """
-    if has_tag(ds, AnnotationTag.SEQUENCE):
-        for seq in get_tag_value(ds, AnnotationTag.SEQUENCE):
-            if has_tag(seq, AnnotationTag.OBJECT):
-                for obj in get_tag_value(seq, AnnotationTag.OBJECT):
+    if has_sequence(ds, AnnotationTag.SEQUENCE):
+        for seq in get_sequence(ds, AnnotationTag.SEQUENCE):
+            if has_sequence(seq, AnnotationTag.OBJECT):
+                for obj in get_sequence(seq, AnnotationTag.OBJECT):
                     if has_annotation(obj):
                         return True
 
@@ -125,21 +48,9 @@ def has_reference(ds):
     :param ds: The dataset to search.
     :return: Whether or not a DICOM reference sequence is present.
     """
-    return has_tag(ds, ReferenceTag.SEQUENCE) and \
-        len(get_tag_value(ds, ReferenceTag.SEQUENCE).value) == 1 and \
-        len(get_sequence_value(ds, 0, ReferenceTag.SEQUENCE)) == 2
-
-
-def has_tag(ds, tag):
-    """
-    Returns whether or not the specified tag is present in the specified
-    dataset.
-
-    :param ds: The dataset to search.
-    :param tag: The tag to search for.
-    :return: Whether or not a DICOM tag is present.
-    """
-    return tag.value in ds
+    return has_sequence(ds, ReferenceTag.SEQUENCE) and \
+        len(get_sequence(ds, ReferenceTag.SEQUENCE).value) == 1 and \
+        len(get_tag_at(ds, 0, ReferenceTag.SEQUENCE)) == 2
 
 
 def parse_annotation(ds):
@@ -151,12 +62,12 @@ def parse_annotation(ds):
     :return: A dictionary of annotation tag values.
     :raises MissingTag: If one or more tags could not be found.
     """
-    return _make_tag_dict(
-        get_tag_value(ds, AnnotationTag.COUNT),
-        get_tag_value(ds, AnnotationTag.DATA),
-        get_tag_value(ds, AnnotationTag.DIMENSIONS),
-        get_tag_value(ds, AnnotationTag.TYPE),
-        get_tag_value(ds, AnnotationTag.UNITS)
+    return make_tag_dict(
+        get_tag(ds, AnnotationTag.COUNT),
+        get_tag(ds, AnnotationTag.DATA),
+        get_tag(ds, AnnotationTag.DIMENSIONS),
+        get_tag(ds, AnnotationTag.TYPE),
+        get_tag(ds, AnnotationTag.UNITS)
     )
 
 
@@ -171,9 +82,9 @@ def parse_annotations(ds):
     """
     annotations = []
 
-    for seq in get_tag_value(ds, AnnotationTag.SEQUENCE):
-        if has_tag(seq, AnnotationTag.OBJECT):
-            for obj in get_tag_value(seq, AnnotationTag.OBJECT):
+    for seq in get_sequence(ds, AnnotationTag.SEQUENCE):
+        if has_sequence(seq, AnnotationTag.OBJECT):
+            for obj in get_sequence(seq, AnnotationTag.OBJECT):
                 annotations.append(parse_annotation(obj))
 
     return {"annotations": annotations}
@@ -192,10 +103,10 @@ def parse_common(ds):
     :return: A dictionary of common tag values.
     :raises MissingTag: If one or more tags could not be found.
     """
-    return _make_tag_dict(
-        get_tag_value(ds, CommonTag.SOP_CLASS),
-        get_tag_value(ds, CommonTag.SOP_INSTANCE),
-        get_tag_value(ds, CommonTag.SERIES)
+    return make_tag_dict(
+        get_tag(ds, CommonTag.SOP_CLASS),
+        get_tag(ds, CommonTag.SOP_INSTANCE),
+        get_tag(ds, CommonTag.SERIES)
     )
 
 
@@ -210,14 +121,14 @@ def parse_reference(ds):
     :raises MissingSequence: If one or more sequence tags could not be found.
     :raises MissingTag: If one or more tags could not be found.
     """
-    seq = get_sequence_value(ds, 0, ReferenceTag.SEQUENCE)
-    obj = get_sequence_value(seq, 0, ReferenceTag.OBJECT)
+    seq = get_tag_at(ds, 0, ReferenceTag.SEQUENCE)
+    obj = get_tag_at(seq, 0, ReferenceTag.OBJECT)
 
     return {
-        "ref": _make_tag_dict(
-            get_tag_value(obj, ReferenceTag.SOP_CLASS),
-            get_tag_value(obj, ReferenceTag.SOP_INSTANCE),
-            get_tag_value(seq, ReferenceTag.SERIES)
+        "ref": make_tag_dict(
+            get_tag(obj, ReferenceTag.SOP_CLASS),
+            get_tag(obj, ReferenceTag.SOP_INSTANCE),
+            get_tag(seq, ReferenceTag.SERIES)
     )}
 
 

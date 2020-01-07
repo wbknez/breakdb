@@ -4,8 +4,8 @@ DICOM tags work as intended.
 """
 import pytest
 
-from breakdb.parse import parse_common, MissingTag
-from breakdb.tag import CommonTag
+from breakdb.parse import parse_common
+from breakdb.tag import CommonTag, MissingTag
 from tests.helpers.assertion import match
 
 

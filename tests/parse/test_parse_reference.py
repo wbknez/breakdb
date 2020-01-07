@@ -4,9 +4,9 @@ references work as intended.
 """
 import pytest
 
-from breakdb.parse import has_reference, parse_reference, get_sequence_value, \
-    MissingTag, MissingSequence, MalformedSequence
-from breakdb.tag import ReferenceTag
+from breakdb.parse import has_reference, parse_reference
+from breakdb.tag import ReferenceTag, get_tag_at, MalformedSequence, \
+    MissingSequence, MissingTag
 from tests.helpers.assertion import match
 
 
@@ -37,8 +37,8 @@ class TestParseReference:
     def test_parse_reference_succeeds(self, create_dataset):
         ds = create_dataset()
 
-        seq = get_sequence_value(ds, 0, ReferenceTag.SEQUENCE)
-        obj = get_sequence_value(seq, 0, ReferenceTag.OBJECT)
+        seq = get_tag_at(ds, 0, ReferenceTag.SEQUENCE)
+        obj = get_tag_at(seq, 0, ReferenceTag.OBJECT)
 
         parsed = parse_reference(ds)
 
@@ -68,8 +68,8 @@ class TestParseReference:
                                                           create_dataset):
         ds = create_dataset()
 
-        seq = get_sequence_value(ds, 0, ReferenceTag.SEQUENCE)
-        obj = get_sequence_value(seq, 0, ReferenceTag.OBJECT)
+        seq = get_tag_at(ds, 0, ReferenceTag.SEQUENCE)
+        obj = get_tag_at(seq, 0, ReferenceTag.OBJECT)
 
         del obj[ReferenceTag.SOP_CLASS.value]
 
@@ -80,8 +80,8 @@ class TestParseReference:
                                                              create_dataset):
         ds = create_dataset()
 
-        seq = get_sequence_value(ds, 0, ReferenceTag.SEQUENCE)
-        obj = get_sequence_value(seq, 0, ReferenceTag.OBJECT)
+        seq = get_tag_at(ds, 0, ReferenceTag.SEQUENCE)
+        obj = get_tag_at(seq, 0, ReferenceTag.OBJECT)
 
         del obj[ReferenceTag.SOP_INSTANCE.value]
 
@@ -92,7 +92,7 @@ class TestParseReference:
                                                            create_dataset):
         ds = create_dataset()
 
-        seq = get_sequence_value(ds, 0, ReferenceTag.SEQUENCE)
+        seq = get_tag_at(ds, 0, ReferenceTag.SEQUENCE)
 
         del seq[ReferenceTag.SERIES.value]
 
