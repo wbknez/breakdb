@@ -85,6 +85,20 @@ def get_tag_value(ds, tag):
 
 def has_annotation(ds):
     """
+    Returns whether or not the specified dataset contains a single annotation.
+
+    :param ds: The dataset to search.
+    :return: Whether or not a DICOM annotation is present.
+    """
+    return has_tag(ds, AnnotationTag.COUNT) and \
+        has_tag(ds, AnnotationTag.DATA) and \
+        has_tag(ds, AnnotationTag.DIMENSIONS) and \
+        has_tag(ds, AnnotationTag.TYPE) and \
+        has_tag(ds, AnnotationTag.UNITS)
+
+
+def has_annotations(ds):
+    """
     Returns whether or not the specified DICOM dataset contains at least one
     (image) annotation.
 
@@ -92,14 +106,10 @@ def has_annotation(ds):
     :return: Whether or not a DICOM annotation sequence is present.
     """
     if has_tag(ds, AnnotationTag.SEQUENCE):
-        for item in get_tag_value(ds, AnnotationTag.SEQUENCE):
-            if has_tag(item, AnnotationTag.OBJECT):
-                for obj in get_tag_value(item, AnnotationTag.OBJECT):
-                    if has_tag(obj, AnnotationTag.COUNT) and \
-                            has_tag(obj, AnnotationTag.DATA) and \
-                            has_tag(obj, AnnotationTag.DIMENSIONS) and \
-                            has_tag(obj, AnnotationTag.TYPE) and \
-                            has_tag(obj, AnnotationTag.UNITS):
+        for seq in get_tag_value(ds, AnnotationTag.SEQUENCE):
+            if has_tag(seq, AnnotationTag.OBJECT):
+                for obj in get_tag_value(seq, AnnotationTag.OBJECT):
+                    if has_annotation(obj):
                         return True
 
     return False
@@ -130,6 +140,43 @@ def has_tag(ds, tag):
     :return: Whether or not a DICOM tag is present.
     """
     return tag.value in ds
+
+
+def parse_annotation(ds):
+    """
+    Parses and returns a dictionary of values associated with a single
+    annotation in a DICOM file for this project.
+
+    :param ds: The dataset to search.
+    :return: A dictionary of annotation tag values.
+    :raises MissingTag: If one or more tags could not be found.
+    """
+    return _make_tag_dict(
+        get_tag_value(ds, AnnotationTag.COUNT),
+        get_tag_value(ds, AnnotationTag.DATA),
+        get_tag_value(ds, AnnotationTag.DIMENSIONS),
+        get_tag_value(ds, AnnotationTag.TYPE),
+        get_tag_value(ds, AnnotationTag.UNITS)
+    )
+
+
+def parse_annotations(ds):
+    """
+    Parses and returns a dictionary of all annotations in a DICOM dataset
+    for this project.
+
+    :param ds: The dataset to search.
+    :return: A dictionary of a collection of annotations.
+    :raises MissingTag: If one or more tags could not be found.
+    """
+    annotations = []
+
+    for seq in get_tag_value(ds, AnnotationTag.SEQUENCE):
+        if has_tag(seq, AnnotationTag.OBJECT):
+            for obj in get_tag_value(seq, AnnotationTag.OBJECT):
+                annotations.append(parse_annotation(obj))
+
+    return {"annotations": annotations}
 
 
 def parse_common(ds):
@@ -186,6 +233,9 @@ def parse_dataset(ds):
     parsed = {}
 
     parsed += parse_common(ds)
+
+    if has_annotations(ds):
+        parsed += parse_annotations(ds)
 
     if has_reference(ds):
         parsed += parse_reference(ds)
