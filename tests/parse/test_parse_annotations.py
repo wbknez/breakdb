@@ -117,7 +117,7 @@ class TestParseAnnotations:
         ds = create_dataset(annotations=1)
 
         parsed = parse_annotations(ds)
-        annots = parsed["annotations"]
+        annots = parsed[AnnotationTag.SEQUENCE.value]
 
         seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
         obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
@@ -135,7 +135,7 @@ class TestParseAnnotations:
         ds = create_dataset(annotations=n)
 
         parsed = parse_annotations(ds)
-        annots = parsed["annotations"]
+        annots = parsed[AnnotationTag.SEQUENCE.value]
 
         seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
         objs = get_tag(seq, AnnotationTag.OBJECT)

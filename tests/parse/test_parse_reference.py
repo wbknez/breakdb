@@ -42,9 +42,9 @@ class TestParseReference:
 
         parsed = parse_reference(ds)
 
-        match(obj, parsed["ref"], ReferenceTag.SOP_CLASS)
-        match(obj, parsed["ref"], ReferenceTag.SOP_INSTANCE)
-        match(seq, parsed["ref"], ReferenceTag.SERIES)
+        match(obj, parsed[ReferenceTag.SEQUENCE.value], ReferenceTag.SOP_CLASS)
+        match(obj, parsed[ReferenceTag.SEQUENCE.value], ReferenceTag.SOP_INSTANCE)
+        match(seq, parsed[ReferenceTag.SEQUENCE.value], ReferenceTag.SERIES)
 
     def test_parse_reference_throws_when_sequence_is_missing(self,
                                                              create_dataset):
