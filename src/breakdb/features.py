@@ -33,7 +33,7 @@ class Coordinates:
 
 
 @unique
-class Presentation(IntEnum):
+class Classification(IntEnum):
     """
     Represents whether or not a fracture is present in an image.
     """
