@@ -87,7 +87,7 @@ class CommonTag(Enum):
 
 
 @unique
-class ImageTag(Enum):
+class PixelTag(Enum):
     """
     Represents a collection of DICOM tags that specify how an image
     contained within is formatted.
@@ -102,7 +102,7 @@ class ImageTag(Enum):
     downsampling factor.
     """
 
-    PIXELS = Tag(0x7fe0, 0x0010)
+    DATA = Tag(0x7fe0, 0x0010)
     """
     Represents the (raw) pixel data in a single image.
     
@@ -154,6 +154,39 @@ class ReferenceTag(Enum):
     Represents the (unique) SOP instance identifier.
     
     This tag is unique per file.
+    """
+
+
+@unique
+class ScalingTag(Enum):
+    """
+    Represents a collection of DICOM tags that specify how pixel data
+    is converted from a storage format to visualization.
+    """
+
+    CENTER = Tag(0x0028, 0x1050)
+    """
+    Represents the scaled window center.
+    """
+
+    INTERCEPT = Tag(0x0028, 0x1052)
+    """
+    Represents the intercept of a linear transformation between pixel formats.
+    """
+
+    SLOPE = Tag(0x0028, 0x1053)
+    """
+    Represents the slope of a linear transformation between pixel formats.    
+    """
+
+    TYPE = Tag(0x0028, 0x1054)
+    """
+    Represents the units of visualization of a data image.
+    """
+
+    WIDTH = Tag(0x0028, 0x1051)
+    """
+    Represents the scaled window width.
     """
 
 
