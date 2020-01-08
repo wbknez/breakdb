@@ -3,7 +3,8 @@ Contains classes and functions concerning the parsing of DICOM metadata into
 usable programmatic structures.
 """
 from breakdb.tag import CommonTag, ReferenceTag, AnnotationTag, get_tag, \
-    get_tag_at, make_tag_dict, has_tag, get_sequence, has_sequence
+    get_tag_at, make_tag_dict, has_tag, get_sequence, has_sequence, PixelTag, \
+    ScalingTag
 
 
 def has_annotation(ds):
@@ -38,6 +39,19 @@ def has_annotations(ds):
     return False
 
 
+def has_pixels(ds):
+    """
+    Returns whether or not the specified DICOM dataset contains raw imaging
+    information (pixels).
+
+    :param ds: The dataset to search.
+    :return: Whether or not DICOM image data is present.
+    """
+    return has_tag(ds, PixelTag.COLUMNS) and \
+        has_tag(ds, PixelTag.DATA) and \
+        has_tag(ds, PixelTag.ROWS)
+
+
 def has_reference(ds):
     """
     Returns whether or not the specified DICOM dataset contains a reference to
@@ -51,6 +65,22 @@ def has_reference(ds):
     return has_sequence(ds, ReferenceTag.SEQUENCE) and \
         len(get_sequence(ds, ReferenceTag.SEQUENCE).value) == 1 and \
         len(get_tag_at(ds, 0, ReferenceTag.SEQUENCE)) == 2
+
+
+def has_scaling(ds):
+    """
+    Returns whether or not the specified DICOM dataset contains scaling
+    information to convert imaging information (pixels) from a storage
+    format to its original values for visualization.
+
+    :param ds: The dataset to search.
+    :return: Whether or not DICOM scaling data for image data is present.
+    """
+    return has_tag(ds, ScalingTag.CENTER) and \
+        has_tag(ds, ScalingTag.INTERCEPT) and \
+        has_tag(ds, ScalingTag.SLOPE) and \
+        has_tag(ds, ScalingTag.TYPE) and \
+        has_tag(ds, ScalingTag.WIDTH)
 
 
 def parse_annotation(ds):
@@ -87,7 +117,7 @@ def parse_annotations(ds):
             for obj in get_sequence(seq, AnnotationTag.OBJECT):
                 annotations.append(parse_annotation(obj))
 
-    return {"annotations": annotations}
+    return {AnnotationTag.SEQUENCE.value: annotations}
 
 
 def parse_common(ds):
@@ -110,6 +140,39 @@ def parse_common(ds):
     )
 
 
+def parse_pixels(ds):
+    """
+    Parses and returns a dictionary of imaging information in a DICOM
+    dataset for this project.
+
+    :param ds: The dataset to search.
+    :return: A dictionary of imaging information.
+    :raises MissingTag: If one or more tags could not be found.
+    """
+    return make_tag_dict(
+        get_tag(ds, PixelTag.COLUMNS),
+        get_tag(ds, PixelTag.ROWS),
+    )
+
+
+def parse_scaling(ds):
+    """
+    Parses and returns a dictionary of image scaling information in a DICOM
+    dataset for this project.
+
+    :param ds: The dataset to search.
+    :return: A dictionary of image scaling information.
+    :raises MissingTag: If one or more tags could not be found.
+    """
+    return make_tag_dict(
+        get_tag(ds, ScalingTag.CENTER),
+        get_tag(ds, ScalingTag.INTERCEPT),
+        get_tag(ds, ScalingTag.SLOPE),
+        get_tag(ds, ScalingTag.TYPE),
+        get_tag(ds, ScalingTag.WIDTH)
+    )
+
+
 def parse_reference(ds):
     """
     Parses and returns a dictionary of the values of all tags associated
@@ -125,7 +188,7 @@ def parse_reference(ds):
     obj = get_tag_at(seq, 0, ReferenceTag.OBJECT)
 
     return {
-        "ref": make_tag_dict(
+        ReferenceTag.SEQUENCE.value: make_tag_dict(
             get_tag(obj, ReferenceTag.SOP_CLASS),
             get_tag(obj, ReferenceTag.SOP_INSTANCE),
             get_tag(seq, ReferenceTag.SERIES)
@@ -148,7 +211,13 @@ def parse_dataset(ds):
     if has_annotations(ds):
         parsed += parse_annotations(ds)
 
+    if has_pixels(ds):
+        parsed += parse_pixels(ds)
+
     if has_reference(ds):
         parsed += parse_reference(ds)
+
+    if has_scaling(ds):
+        parsed += parse_scaling(ds)
 
     return parsed
