@@ -76,30 +76,29 @@ class ColorizingLogFormatter(logging.Formatter):
         return message
 
 
-def initialize_logging(quiet, use_color, verbose):
+def filter_files(paths, extensions=None):
     """
-    Initializes and configures Python's logging system to use colorized
-    output and new(er) string formatting behavior.
+    Searches for all files in the specified collection of paths and filters
+    them by the specified collection of admissible extensions.
 
-    :param quiet: Whether or not to silence console output.
-    :param use_color: Whether or not to use colorized output.
-    :param verbose: Whether or not to enable verbose, or debug, output.
+    :param paths: A collection of directories to search.
+    :param extensions: A collection of extensions to filter by.
+    :return: A generator over a collection of filtered files.
     """
-    if quiet:
-        return
+    if not extensions:
+        raise ValueError("At least one extension must be provided.")
 
-    root = logging.getLogger()
-    logger = logging.getLogger()
+    if isinstance(extensions, str):
+        extensions = [extensions]
 
-    root.handlers = []
+    for file_path in paths:
+        for root, _, files in os.walk(file_path, topdown=False):
+            root = os.path.abspath(root)
 
-    console_formatter = ColorizingLogFormatter(use_color)
-    console_handler = logging.StreamHandler(sys.stdout)
-
-    console_handler.setFormatter(console_formatter)
-    logger.addHandler(console_handler)
-
-    logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+            for file in files:
+                for extension in extensions:
+                    if file.endswith(extension):
+                        yield os.path.join(root, file)
 
 
 def format_dataset(ds, indent=0, hide_code=False, hide_desc=False,
@@ -161,6 +160,32 @@ def format_dataset(ds, indent=0, hide_code=False, hide_desc=False,
             output.append(f"{indent_str}{format_element(data)}")
 
     return "\n".join(output)
+
+
+def initialize_logging(quiet, use_color, verbose):
+    """
+    Initializes and configures Python's logging system to use colorized
+    output and new(er) string formatting behavior.
+
+    :param quiet: Whether or not to silence console output.
+    :param use_color: Whether or not to use colorized output.
+    :param verbose: Whether or not to enable verbose, or debug, output.
+    """
+    if quiet:
+        return
+
+    root = logging.getLogger()
+    logger = logging.getLogger()
+
+    root.handlers = []
+
+    console_formatter = ColorizingLogFormatter(use_color)
+    console_handler = logging.StreamHandler(sys.stdout)
+
+    console_handler.setFormatter(console_formatter)
+    logger.addHandler(console_handler)
+
+    logger.setLevel(logging.DEBUG if verbose else logging.INFO)
 
 
 def supports_color_output():
