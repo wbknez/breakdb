@@ -13,12 +13,12 @@ class DatabaseWriter(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def write(self, db, file_path):
+    def write(self, db, stream):
         """
         Reads a database from the specified file on disk.
 
         :param db: The database to write.
-        :param file_path: The file to write a database to.
+        :param stream: The stream to write a database to.
         """
         pass
 
@@ -29,10 +29,19 @@ class CsvDatabaseWriter(DatabaseWriter):
     X-ray image database to a CSV file.
     """
 
-    def write(self, db, file_path):
-        with open(file_path, "w") as stream:
-            db.to_csv(stream, encoding="utf-8", header=True, index=True,
-                      quoting=QUOTE_NONNUMERIC, sep=",")
+    def write(self, db, stream):
+        db.to_csv(stream, encoding="utf-8", header=True, index=True,
+                  quoting=QUOTE_NONNUMERIC, sep=",")
+
+
+class ExcelDatabaseWriter(DatabaseWriter):
+    """
+    Represents an implementation of :class: 'DatabaseWrite' that writes an
+    X-ray image database to an Excel spreadsheet.
+    """
+
+    def write(self, db, stream):
+        db.to_excel(stream, encoding="utf-8", header=True, index=True)
 
 
 class JsonDatabaseWriter(DatabaseWriter):
@@ -41,6 +50,5 @@ class JsonDatabaseWriter(DatabaseWriter):
     X-ray image database to a JSON file.
     """
 
-    def write(self, db, file_path):
-        with open(file_path, "w") as stream:
-            db.to_json(stream, index=True, orient="records")
+    def write(self, db, stream):
+        db.to_json(stream, index=True, orient="records")
