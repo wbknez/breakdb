@@ -2,9 +2,14 @@
 Contains classes and functions concerning the parsing of DICOM metadata into
 usable programmatic structures.
 """
+import logging
+
+from pydicom import dcmread
+from pydicom.errors import InvalidDicomError
+
 from breakdb.tag import CommonTag, ReferenceTag, AnnotationTag, get_tag, \
     get_tag_at, make_tag_dict, has_tag, get_sequence, has_sequence, PixelTag, \
-    ScalingTag
+    ScalingTag, MissingTag, MalformedSequence, MissingSequence, replace_tag
 
 
 def has_annotation(ds):
@@ -15,10 +20,10 @@ def has_annotation(ds):
     :return: Whether or not a DICOM annotation is present.
     """
     return has_tag(ds, AnnotationTag.COUNT) and \
-        has_tag(ds, AnnotationTag.DATA) and \
-        has_tag(ds, AnnotationTag.DIMENSIONS) and \
-        has_tag(ds, AnnotationTag.TYPE) and \
-        has_tag(ds, AnnotationTag.UNITS)
+           has_tag(ds, AnnotationTag.DATA) and \
+           has_tag(ds, AnnotationTag.DIMENSIONS) and \
+           has_tag(ds, AnnotationTag.TYPE) and \
+           has_tag(ds, AnnotationTag.UNITS)
 
 
 def has_annotations(ds):
@@ -63,8 +68,8 @@ def has_reference(ds):
     :return: Whether or not a DICOM reference sequence is present.
     """
     return has_sequence(ds, ReferenceTag.SEQUENCE) and \
-        len(get_sequence(ds, ReferenceTag.SEQUENCE).value) == 1 and \
-        len(get_tag_at(ds, 0, ReferenceTag.SEQUENCE)) == 2
+           len(get_sequence(ds, ReferenceTag.SEQUENCE).value) == 1 and \
+           len(get_tag_at(ds, 0, ReferenceTag.SEQUENCE)) == 2
 
 
 def has_scaling(ds):
@@ -192,7 +197,7 @@ def parse_reference(ds):
             get_tag(obj, ReferenceTag.SOP_CLASS),
             get_tag(obj, ReferenceTag.SOP_INSTANCE),
             get_tag(seq, ReferenceTag.SERIES)
-    )}
+        )}
 
 
 def parse_dataset(ds):
@@ -204,20 +209,70 @@ def parse_dataset(ds):
     :return: A dictionary of available tag values.
     :raises MissingTag: If one or more expected tags could not be found.
     """
-    parsed = {}
-
-    parsed += parse_common(ds)
+    parsed = parse_common(ds)
 
     if has_annotations(ds):
-        parsed += parse_annotations(ds)
+        parsed.update(parse_annotations(ds))
 
     if has_pixels(ds):
-        parsed += parse_pixels(ds)
+        parsed.update(parse_pixels(ds))
 
     if has_reference(ds):
-        parsed += parse_reference(ds)
+        parsed.update(parse_reference(ds))
 
     if has_scaling(ds):
-        parsed += parse_scaling(ds)
+        parsed.update(parse_scaling(ds))
 
     return parsed
+
+
+def parse_dicom(file_path, skip_broken):
+    """
+    Parses the specified DICOM file and returns a dictionary of all found
+    tags and associated values relevant to this project.
+
+    Setting :arg: 'skip_broken' to True will result in this function always
+    succeeding.  Instead of throwing an exception, it will instead simply
+    log any errors that occur as warnings and supply an empty dictionary.
+
+    :param file_path: The path to the DICOM file to parse.
+    :param skip_broken: Log but otherwise ignore any exceptions that take
+    place, returning an empty dictionary as the result.
+    :return: A dictionary of parsed tags and associated values.
+    :raises InvalidDicomError: If no valid DICOM header is found.
+    :raises MalformedSequence: If a sequence is unexpectedly empty.
+    :raises MissingSequence: If one or more expected sequences could not be
+    found.
+    :raises MissingTag: If one or more expected tags could not be found.
+    """
+    logger = logging.getLogger(__name__)
+
+    try:
+        with dcmread(file_path) as ds:
+            parsed = parse_dataset(ds)
+
+            if has_tag(parsed, PixelTag.COLUMNS) and \
+                    has_tag(parsed, PixelTag.ROWS):
+                parsed[PixelTag.DATA.value] = file_path
+
+            if has_tag(parsed, ReferenceTag.SEQUENCE):
+                ref = get_tag(parsed, ReferenceTag.SEQUENCE)
+
+                parsed = replace_tag(ref, parsed,
+                                     ReferenceTag.SOP_CLASS,
+                                     CommonTag.SOP_CLASS)
+                parsed = replace_tag(ref, parsed,
+                                     ReferenceTag.SOP_INSTANCE,
+                                     CommonTag.SOP_INSTANCE)
+                parsed = replace_tag(ref, parsed,
+                                     ReferenceTag.SERIES,
+                                     CommonTag.SERIES)
+
+            return parsed
+    except (InvalidDicomError, MalformedSequence, MissingSequence, MissingTag):
+        if skip_broken:
+            logger.warning("Could not parse DICOM file - skipping: {}.",
+                           file_path)
+            return {}
+        else:
+            raise
