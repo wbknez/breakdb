@@ -60,7 +60,6 @@ setup(
     extras_require={
     },
     entry_points={
-        'console_scripts': [
-        ]
+        'console_scripts': [ 'breakdb=breakdb.__main__:main']
     },
 )
