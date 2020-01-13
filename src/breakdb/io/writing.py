@@ -30,7 +30,7 @@ class CsvDatabaseWriter(DatabaseWriter):
     """
 
     def write(self, db, stream):
-        db.to_csv(stream, encoding="utf-8", header=True, index=True,
+        db.to_csv(stream, encoding="utf-8", header=True, index=False,
                   quoting=QUOTE_NONNUMERIC, sep=",")
 
 
@@ -41,7 +41,7 @@ class ExcelDatabaseWriter(DatabaseWriter):
     """
 
     def write(self, db, stream):
-        db.to_excel(stream, encoding="utf-8", header=True, index=True)
+        db.to_excel(stream, encoding="utf-8", header=True, index=False)
 
 
 class JsonDatabaseWriter(DatabaseWriter):
@@ -51,4 +51,4 @@ class JsonDatabaseWriter(DatabaseWriter):
     """
 
     def write(self, db, stream):
-        db.to_json(stream, index=True, orient="records")
+        db.to_json(stream, orient="records")
