@@ -9,7 +9,8 @@ from pydicom.errors import InvalidDicomError
 
 from breakdb.tag import CommonTag, ReferenceTag, AnnotationTag, get_tag, \
     get_tag_at, make_tag_dict, has_tag, get_sequence, has_sequence, PixelTag, \
-    ScalingTag, MissingTag, MalformedSequence, MissingSequence, replace_tag
+    ScalingTag, MissingTag, MalformedSequence, MissingSequence, replace_tag, \
+    MiscTag, check_tag_is
 
 
 def has_annotation(ds):
@@ -42,6 +43,17 @@ def has_annotations(ds):
                         return True
 
     return False
+
+
+def has_misc(ds):
+    """
+    Returns whether or not the specified DICOM dataset contains miscellaneous
+    information (e.g.: body part).
+
+    :param ds: The dataset to search.
+    :return: Whether or not miscellaneous DICOM data is present.
+    """
+    return has_tag(ds, MiscTag.BODY_PART)
 
 
 def has_pixels(ds):
@@ -97,13 +109,12 @@ def parse_annotation(ds):
     :return: A dictionary of annotation tag values.
     :raises MissingTag: If one or more tags could not be found.
     """
-    return make_tag_dict(
-        get_tag(ds, AnnotationTag.COUNT),
-        get_tag(ds, AnnotationTag.DATA),
-        get_tag(ds, AnnotationTag.DIMENSIONS),
-        get_tag(ds, AnnotationTag.TYPE),
-        get_tag(ds, AnnotationTag.UNITS)
-    )
+    check_tag_is(ds, AnnotationTag.COUNT, 5)
+    check_tag_is(ds, AnnotationTag.DIMENSIONS, 2)
+    check_tag_is(ds, AnnotationTag.TYPE, "POLYLINE")
+    check_tag_is(ds, AnnotationTag.UNITS, "PIXEL")
+
+    return [coord for coord in get_tag(ds, AnnotationTag.DATA)]
 
 
 def parse_annotations(ds):
@@ -142,6 +153,20 @@ def parse_common(ds):
         get_tag(ds, CommonTag.SOP_CLASS),
         get_tag(ds, CommonTag.SOP_INSTANCE),
         get_tag(ds, CommonTag.SERIES)
+    )
+
+
+def parse_misc(ds):
+    """
+    Parses and returns a dictionary of miscellaneous information in a DICOM
+    dataset for this project.
+
+    :param ds: The dataset to search.
+    :return: A dictionary of miscellaneous information.
+    :raises MissingTag: If one or more tags could not be found.
+    """
+    return make_tag_dict(
+        get_tag(ds, MiscTag.BODY_PART)
     )
 
 
@@ -214,6 +239,9 @@ def parse_dataset(ds):
     if has_annotations(ds):
         parsed.update(parse_annotations(ds))
 
+    if has_misc(ds):
+        parsed.update(parse_misc(ds))
+
     if has_pixels(ds):
         parsed.update(parse_pixels(ds))
 
@@ -253,20 +281,17 @@ def parse_dicom(file_path, skip_broken):
 
             if has_tag(parsed, PixelTag.COLUMNS) and \
                     has_tag(parsed, PixelTag.ROWS):
-                parsed[PixelTag.DATA.value] = file_path
+                parsed.update({PixelTag.DATA.value: file_path})
 
             if has_tag(parsed, ReferenceTag.SEQUENCE):
                 ref = get_tag(parsed, ReferenceTag.SEQUENCE)
 
-                parsed = replace_tag(ref, parsed,
-                                     ReferenceTag.SOP_CLASS,
-                                     CommonTag.SOP_CLASS)
-                parsed = replace_tag(ref, parsed,
-                                     ReferenceTag.SOP_INSTANCE,
-                                     CommonTag.SOP_INSTANCE)
-                parsed = replace_tag(ref, parsed,
-                                     ReferenceTag.SERIES,
-                                     CommonTag.SERIES)
+                parsed.update(replace_tag(ref, ReferenceTag.SOP_CLASS,
+                                          CommonTag.SOP_CLASS))
+                parsed.update(replace_tag(ref, ReferenceTag.SOP_INSTANCE,
+                                          CommonTag.SOP_INSTANCE))
+                parsed.update(replace_tag(ref, ReferenceTag.SERIES,
+                                          CommonTag.SERIES))
 
             return parsed
     except (InvalidDicomError, MalformedSequence, MissingSequence, MissingTag):
