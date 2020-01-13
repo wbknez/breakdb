@@ -87,6 +87,15 @@ class CommonTag(Enum):
 
 
 @unique
+class MiscTag(Enum):
+    """
+
+    """
+
+    BODY_PART = Tag(0x0018, 0x0015)
+
+
+@unique
 class PixelTag(Enum):
     """
     Represents a collection of DICOM tags that specify how an image
@@ -197,7 +206,18 @@ class MalformedSequence(Exception):
     """
 
     def __init__(self, tag):
-        super().__init__(f"{tag} is not a valid sequence.")
+        super().__init__(f"Tag is not a valid sequence: {tag}.")
+
+
+class MalformedTag(Exception):
+    """
+    Represents an exception that is raised when an expected tag is present
+    but not formatted correctly.
+    """
+
+    def __init__(self, tag, expected_value):
+        super().__init__(f"Tag is present but is not the expected value: "
+                         f"{tag} should be {expected_value}.")
 
 
 class MissingSequence(Exception):
@@ -207,7 +227,7 @@ class MissingSequence(Exception):
     """
 
     def __init__(self, tag):
-        super().__init__(f"{tag} is present but not a sequence.")
+        super().__init__(f"Tag is present but not a sequence: {tag}.")
 
 
 class MissingTag(Exception):
@@ -216,7 +236,28 @@ class MissingTag(Exception):
     """
 
     def __init__(self, tag):
-        super().__init__(f"{tag} is expected but missing.")
+        super().__init__(f"Tag is expected but missing: {tag}.")
+
+
+def check_tag_is(ds, tag, expected_value):
+    """
+    Checks that the value of the specified tag in the specified dataset is
+    equivalent to the specified expected value.
+
+    :param ds: The dataset to read.
+    :param tag: The tag to check.
+    :param expected_value: The tag value to compare to.
+    :return: Whether or not the check succeeded.
+    :raises MalformedTag: If the requested tag differs from an expected value.
+    :raises MissingTag: If the requested tag could not be found.
+    """
+    if not has_tag(ds, tag):
+        raise MissingTag(tag)
+
+    if ds[tag.value] != expected_value:
+        raise MalformedTag(tag, expected_value)
+
+    return True
 
 
 def get_sequence(ds, tag):
@@ -311,3 +352,23 @@ def make_tag_dict(*values):
     :return: A dictionary of tags and their associated values.
     """
     return {value.tag: value.value for value in values}
+
+
+def replace_tag(src, src_tag, dest_tag=None):
+    """
+    Creates a new, small dictionary of tag values for use in overwriting
+    the specified destination tag.
+
+    :param src: The dataset to read from.
+    :param src_tag: The source tag to find.
+    :param dest_tag: The destination tag to replace.
+    :return: A copy of the destination with updated tag(s) and value(s).
+    :raises MissingTag: If the requested tag could not be found.
+    """
+    if not dest_tag:
+        dest_tag = src_tag
+
+    if not has_tag(src, src_tag):
+        raise MissingTag(src_tag)
+
+    return {dest_tag.value: src[src_tag.value]}
