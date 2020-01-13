@@ -22,6 +22,19 @@ _WRITERS = {
 }
 
 
+COLUMN_NAMES = [
+    "ID",               # The SOP instance UID.
+    "Series",           # The series UID.
+    "Classification",   # Whether or not a fracture is present (ground-truth).
+    "Body Part",        # The type of body part imaged.
+    "Width",            # The image width (in pixels).
+    "Height",           # The image height (in pixels).
+    "File Path",        # Location of image file on disk.
+    "Scaling",          # Visual transformation information (slope, etc.).
+    "Annotation"        # All discovered annotations.
+]
+
+
 def filter_files(paths, extensions=None, relative=False):
     """
     Searches for all files in the specified collection of paths and filters
