@@ -254,7 +254,7 @@ def check_tag_is(ds, tag, expected_value):
     if not has_tag(ds, tag):
         raise MissingTag(tag)
 
-    if ds[tag.value] != expected_value:
+    if ds[tag.value].value != expected_value:
         raise MalformedTag(tag, expected_value)
 
     return True
