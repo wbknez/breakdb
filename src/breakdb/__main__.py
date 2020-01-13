@@ -6,7 +6,7 @@ The main driver for the fracture (break) detection database project.
 import sys
 from argparse import ArgumentParser
 
-from breakdb.action import print_tags
+from breakdb.action import print_tags, create_database
 from breakdb.util import initialize_logging, supports_color_output
 
 
@@ -22,7 +22,7 @@ def parse_args():
                                                    "database for machine "
                                                    "learning algorithms.")
 
-    parser.add_argument("-c", "--color", choices=["auto", "yes", "no"],
+    parser.add_argument("-c", "--color", choices=["auto", "on", "off"],
                         help="enable colored console output", default="auto")
     parser.add_argument("-q", "--quiet", action="store_true",
                           help="disable console output", default=False)
@@ -30,6 +30,25 @@ def parse_args():
                           help="enable verbose console output", default=False)
 
     subparsers = parser.add_subparsers(dest="subparsers", required=True)
+
+    create = subparsers.add_parser(name="create",
+                                   description="Create a database from one "
+                                               "or more DICOM files in a "
+                                               "directory.")
+
+    create.set_defaults(func=create_database)
+
+    create.add_argument("-o", "--output", type=str,
+                        help="file to output database to", required=True)
+    create.add_argument("-p", "--parallel", type=int,
+                        help="number of parallel processes", default=2)
+    create.add_argument("-s", "--skip-broken", action="store_true",
+                        help="ignore malformed DICOM files", default=False)
+    create.add_argument("-r", "--relative", action="store_true",
+                        help="encode relative paths", default=False)
+
+    create.add_argument("PATHS", nargs="+", type=str,
+                        help="")
 
     tags = subparsers.add_parser(name="print-tags",
                                  description="show all DICOM metadata tags "
@@ -61,7 +80,7 @@ def main():
     args = parse_args()
     args.use_color = supports_color_output()
 
-    if args.color == "no":
+    if args.color == "off":
         args.use_color = False
 
     initialize_logging(args.quiet, args.use_color, args.verbose)
