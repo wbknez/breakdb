@@ -10,7 +10,7 @@ from pydicom.errors import InvalidDicomError
 from breakdb.tag import CommonTag, ReferenceTag, AnnotationTag, get_tag, \
     get_tag_at, make_tag_dict, has_tag, get_sequence, has_sequence, PixelTag, \
     ScalingTag, MissingTag, MalformedSequence, MissingSequence, replace_tag, \
-    MiscTag, check_tag_is
+    MiscTag, check_tag_is, MalformedTag
 
 
 def has_annotation(ds):
@@ -294,10 +294,11 @@ def parse_dicom(file_path, skip_broken):
                                           CommonTag.SERIES))
 
             return parsed
-    except (InvalidDicomError, MalformedSequence, MissingSequence, MissingTag):
+    except (InvalidDicomError, MalformedSequence, MalformedTag,
+            MissingSequence, MissingTag):
         if skip_broken:
-            logger.warning("Could not parse DICOM file - skipping: {}.",
-                           file_path)
+            logger.warning("Could not parse DICOM file: {}.", file_path)
             return {}
         else:
+            logger.error("Could not parse DICOM file: {}.", file_path)
             raise
