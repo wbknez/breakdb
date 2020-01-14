@@ -149,24 +149,29 @@ def merge_dicom(parsed, skip_broken):
     logger = logging.getLogger(__name__)
     merged = {AnnotationTag.SEQUENCE.value: []}
 
-    for ds in parsed:
+    file_path, to_merge = parsed
+
+    for ds in to_merge:
         try:
             merged = merge_dataset(ds, merged)
-        except TagConflict:
+        except TagConflict as tc:
             if skip_broken:
-                logger.warning("Could not merge datasets.")
+                logger.warning("Could not merge datasets for: {}.", file_path)
+                logger.warning("  Reason: {}.", tc)
             else:
-                logger.error("Could not merge datasets.")
+                logger.error("Could not merge datasets for: {}.", file_path)
                 raise
 
     try:
         return make_database_entry(merged)
-    except MissingTag:
+    except MissingTag as mt:
         if skip_broken:
-            logger.warning("Could not create database entry.")
+            logger.warning("Could not create database entry for: {}.",
+                           file_path)
+            logger.warning("  Reason: {}.", mt)
             return {}
         else:
-            logger.error("Could not create database entry.")
+            logger.error("Could not create database entry for: {}.", file_path)
             raise
 
 
@@ -188,8 +193,8 @@ def organize_parsed(parsed):
     """
     to_merge = defaultdict(list)
 
-    for ds in parsed:
+    for file_path, ds in parsed:
         if ds:
             to_merge[get_tag(ds, CommonTag.SOP_INSTANCE)].append(ds)
 
-    return to_merge.values()
+    return list(to_merge.items())
