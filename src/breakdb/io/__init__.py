@@ -51,9 +51,11 @@ def filter_files(paths, extensions=None, relative=False):
     if isinstance(extensions, str):
         extensions = [extensions]
 
+    resolver = os.path.abspath if not relative else os.path.relpath
+
     for file_path in paths:
         for root, _, files in os.walk(file_path, topdown=False):
-            root = os.path.abspath(root) if not relative else root
+            root = resolver(root)
 
             for file in files:
                 for extension in extensions:
