@@ -10,7 +10,7 @@ from pydicom.errors import InvalidDicomError
 from breakdb.tag import CommonTag, ReferenceTag, AnnotationTag, get_tag, \
     get_tag_at, make_tag_dict, has_tag, get_sequence, has_sequence, PixelTag, \
     ScalingTag, MissingTag, MalformedSequence, MissingSequence, replace_tag, \
-    MiscTag, check_tag_is, MalformedTag
+    MiscTag, check_tag, check_sequence_length
 
 
 def has_annotation(ds):
@@ -21,10 +21,15 @@ def has_annotation(ds):
     :return: Whether or not a DICOM annotation is present.
     """
     return has_tag(ds, AnnotationTag.COUNT) and \
-           has_tag(ds, AnnotationTag.DATA) and \
-           has_tag(ds, AnnotationTag.DIMENSIONS) and \
-           has_tag(ds, AnnotationTag.TYPE) and \
-           has_tag(ds, AnnotationTag.UNITS)
+        has_tag(ds, AnnotationTag.DATA) and \
+        has_tag(ds, AnnotationTag.DIMENSIONS) and \
+        has_tag(ds, AnnotationTag.TYPE) and \
+        has_tag(ds, AnnotationTag.UNITS) and \
+        check_tag(ds, AnnotationTag.COUNT, 5) and \
+        check_tag(ds, AnnotationTag.DIMENSIONS, 2) and \
+        check_tag(ds, AnnotationTag.TYPE, "POLYLINE") and \
+        check_tag(ds, AnnotationTag.UNITS, "PIXEL") and \
+        check_sequence_length(ds, AnnotationTag.DATA, 10)
 
 
 def has_annotations(ds):
@@ -80,8 +85,8 @@ def has_reference(ds):
     :return: Whether or not a DICOM reference sequence is present.
     """
     return has_sequence(ds, ReferenceTag.SEQUENCE) and \
-           len(get_sequence(ds, ReferenceTag.SEQUENCE).value) == 1 and \
-           len(get_tag_at(ds, 0, ReferenceTag.SEQUENCE)) == 2
+        check_sequence_length(ds, ReferenceTag.SEQUENCE, 1) and \
+        len(get_tag_at(ds, 0, ReferenceTag.SEQUENCE)) == 2
 
 
 def has_scaling(ds):
@@ -109,11 +114,6 @@ def parse_annotation(ds):
     :return: A dictionary of annotation tag values.
     :raises MissingTag: If one or more tags could not be found.
     """
-    check_tag_is(ds, AnnotationTag.COUNT, 5)
-    check_tag_is(ds, AnnotationTag.DIMENSIONS, 2)
-    check_tag_is(ds, AnnotationTag.TYPE, "POLYLINE")
-    check_tag_is(ds, AnnotationTag.UNITS, "PIXEL")
-
     return [coord for coord in get_tag(ds, AnnotationTag.DATA)]
 
 
@@ -293,12 +293,13 @@ def parse_dicom(file_path, skip_broken):
                 parsed.update(replace_tag(ref, ReferenceTag.SERIES,
                                           CommonTag.SERIES))
 
-            return parsed
-    except (InvalidDicomError, MalformedSequence, MalformedTag,
-            MissingSequence, MissingTag):
+            return file_path, parsed
+    except (InvalidDicomError, MalformedSequence, MissingSequence,
+            MissingTag) as ex:
         if skip_broken:
             logger.warning("Could not parse DICOM file: {}.", file_path)
-            return {}
+            logger.warning("  Reason: {}.", ex)
+            return file_path, {}
         else:
             logger.error("Could not parse DICOM file: {}.", file_path)
             raise
