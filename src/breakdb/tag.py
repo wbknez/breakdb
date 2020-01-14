@@ -209,17 +209,6 @@ class MalformedSequence(Exception):
         super().__init__(f"Tag is not a valid sequence: {tag}.")
 
 
-class MalformedTag(Exception):
-    """
-    Represents an exception that is raised when an expected tag is present
-    but not formatted correctly.
-    """
-
-    def __init__(self, tag, expected_value):
-        super().__init__(f"Tag is present but is not the expected value: "
-                         f"{tag} should be {expected_value}.")
-
-
 class MissingSequence(Exception):
     """
     Represents an exception that is raised when an expected sequence is
@@ -239,7 +228,24 @@ class MissingTag(Exception):
         super().__init__(f"Tag is expected but missing: {tag}.")
 
 
-def check_tag_is(ds, tag, expected_value):
+def check_sequence_length(ds, tag, expected_length):
+    """
+    Checks that the value of the specified tag in the specified dataset is
+    equivalent to the specified expected value.
+
+    :param ds: The dataset to read.
+    :param tag: The tag to check.
+    :param expected_length: The tag value to compare to.
+    :return: Whether or not the check succeeded.
+    :raises MissingTag: If the requested tag could not be found.
+    """
+    if not has_tag(ds, tag):
+        raise MissingSequence(tag)
+
+    return len(ds[tag.value].value) == expected_length
+
+
+def check_tag(ds, tag, expected_value):
     """
     Checks that the value of the specified tag in the specified dataset is
     equivalent to the specified expected value.
@@ -248,16 +254,12 @@ def check_tag_is(ds, tag, expected_value):
     :param tag: The tag to check.
     :param expected_value: The tag value to compare to.
     :return: Whether or not the check succeeded.
-    :raises MalformedTag: If the requested tag differs from an expected value.
     :raises MissingTag: If the requested tag could not be found.
     """
     if not has_tag(ds, tag):
         raise MissingTag(tag)
 
-    if ds[tag.value].value != expected_value:
-        raise MalformedTag(tag, expected_value)
-
-    return True
+    return ds[tag.value].value == expected_value
 
 
 def get_sequence(ds, tag):
