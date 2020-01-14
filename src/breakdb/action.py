@@ -6,6 +6,7 @@ import logging
 from enum import IntEnum
 from functools import partial
 from multiprocessing.pool import Pool
+from traceback import print_exc
 
 import pandas as pd
 from pydicom import dcmread
@@ -84,6 +85,11 @@ def create_database(args):
         return ExitCode.SUCCESS
     except Exception as ex:
         logger.error("Could not create database: {}.", ex)
+
+        if not args.quiet and args.verbose:
+            print()
+            print("Trace Dump:")
+            print_exc()
 
         return ExitCode.FAILURE
 
