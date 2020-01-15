@@ -67,12 +67,9 @@ def create_database(args):
             logger.debug("Merging complete.")
 
             logger.info("Creating database from entries...")
-            db = pd.DataFrame(merged, columns=COLUMN_NAMES)
+            db = pd.DataFrame(filter(None, merged), columns=COLUMN_NAMES)
 
-            logger.debug("Searching for and removing empty rows.")
-            db.dropna(inplace=True)
-
-            logger.debug("Deleted {} rows.", len(merged) - len(db))
+            logger.debug("Deleted {} empty rows.", len(merged) - len(db))
             logger.debug("Final database size is {} entries.", len(db))
 
             logger.info("Serializing database to disk...")
