@@ -34,8 +34,7 @@ def make_database_entry(merged):
         get_tag(merged, CommonTag.SOP_INSTANCE),
         get_tag(merged, CommonTag.SERIES),
         len(get_tag(merged, AnnotationTag.SEQUENCE)) > 0,
-        get_tag(merged, MiscTag.BODY_PART) \
-            if has_tag(merged, MiscTag.BODY_PART) else "Unknown",
+        get_tag(merged, MiscTag.BODY_PART),
         get_tag(merged, PixelTag.COLUMNS),
         get_tag(merged, PixelTag.ROWS),
         get_tag(merged, PixelTag.DATA),
