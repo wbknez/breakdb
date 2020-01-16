@@ -11,7 +11,8 @@ from traceback import print_exc
 import pandas as pd
 from pydicom import dcmread
 
-from breakdb.io import filter_files, COLUMN_NAMES, write_database
+from breakdb.io import filter_files, COLUMN_NAMES, write_database, \
+    read_database
 from breakdb.merge import organize_parsed, merge_dicom
 from breakdb.parse import parse_dicom
 from breakdb.util import format_dataset
@@ -85,7 +86,31 @@ def create_database(args):
 
         if not args.quiet and args.verbose:
             print()
-            print("Trace Dump:")
+            print("Stack trace:")
+            print_exc()
+
+        return ExitCode.FAILURE
+
+
+def export_database(args):
+    """
+    Exports a user-specified database in one format to another.
+
+    :param args: The user-chosen options to use.
+    :return: An exit code (0 if success, otherwise 1).
+    """
+    logger = logging.getLogger(__name__)
+
+    try:
+        write_database(read_database(args.FILE), args.output)
+
+        return ExitCode.SUCCESS
+    except Exception as ex:
+        logger.error("Could not convert database to alternate format: {}.", ex)
+
+        if not args.quiet and args.verbose:
+            print()
+            print("Stack trace:")
             print_exc()
 
         return ExitCode.FAILURE

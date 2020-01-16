@@ -6,7 +6,7 @@ The main driver for the fracture (break) detection database project.
 import sys
 from argparse import ArgumentParser
 
-from breakdb.action import print_tags, create_database
+from breakdb.action import print_tags, create_database, export_database
 from breakdb.util import initialize_logging, supports_color_output
 
 
@@ -32,9 +32,9 @@ def parse_args():
     subparsers = parser.add_subparsers(dest="subparsers", required=True)
 
     create = subparsers.add_parser(name="create",
-                                   description="Create a database from one "
+                                   description="create a database from one "
                                                "or more DICOM files in a "
-                                               "directory.")
+                                               "directory")
 
     create.set_defaults(func=create_database)
 
@@ -48,11 +48,24 @@ def parse_args():
                         help="encode relative paths", default=False)
 
     create.add_argument("PATHS", nargs="+", type=str,
-                        help="")
+                        help="directories containing one or more DICOM files")
+
+    export = subparsers.add_parser(name="export",
+                                   description="export a database in one "
+                                               "format to another")
+
+    export.set_defaults(func=export_database)
+
+    export.add_argument("-o", "--output", type=str,
+                        help="file to output database to", required=True)
+
+    export.add_argument("FILE", type=str,
+                        help="database file to convert")
 
     tags = subparsers.add_parser(name="print-tags",
                                  description="show all DICOM metadata tags "
                                              "in a file")
+
     tags.set_defaults(func=print_tags)
 
     tags.add_argument("--flat", action="store_true",
