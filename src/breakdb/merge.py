@@ -151,6 +151,8 @@ def merge_dicom(parsed, skip_broken):
 
     file_path, to_merge = parsed
 
+    logger.debug("Merging: {}.", file_path)
+
     for ds in to_merge:
         try:
             merged = merge_dataset(ds, merged)

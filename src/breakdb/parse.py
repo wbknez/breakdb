@@ -276,6 +276,8 @@ def parse_dicom(file_path, skip_broken):
     logger = logging.getLogger(__name__)
 
     try:
+        logger.debug("Parsing: {}.", file_path)
+
         with dcmread(file_path) as ds:
             parsed = parse_dataset(ds)
 
