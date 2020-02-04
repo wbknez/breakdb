@@ -149,31 +149,30 @@ def merge_dicom(parsed, skip_broken):
     logger = logging.getLogger(__name__)
     merged = {AnnotationTag.SEQUENCE.value: []}
 
-    file_path, to_merge = parsed
+    uid, to_merge = parsed
 
-    logger.debug("Merging: {}.", file_path)
+    logger.debug("Merging {} datasets for: {}.", len(to_merge), uid[0])
 
     for ds in to_merge:
         try:
             merged = merge_dataset(ds, merged)
         except TagConflict as tc:
             if skip_broken:
-                logger.warning("Could not merge datasets for: {}.", file_path)
+                logger.warning("Could not merge datasets for: {}.", uid[0])
                 logger.warning("  Reason: {}.", tc)
             else:
-                logger.error("Could not merge datasets for: {}.", file_path)
+                logger.error("Could not merge datasets for: {}.", uid[0])
                 raise
 
     try:
         return make_database_entry(merged)
     except MissingTag as mt:
         if skip_broken:
-            logger.warning("Could not create database entry for: {}.",
-                           file_path)
+            logger.warning("Could not create database entry for: {}.", uid[0])
             logger.warning("  Reason: {}.", mt)
             return {}
         else:
-            logger.error("Could not create database entry for: {}.", file_path)
+            logger.error("Could not create database entry for: {}.", uid[0])
             raise
 
 
@@ -197,6 +196,8 @@ def organize_parsed(parsed):
 
     for file_path, ds in parsed:
         if ds:
-            to_merge[get_tag(ds, CommonTag.SOP_INSTANCE)].append(ds)
+            uid = (get_tag(ds, CommonTag.SOP_INSTANCE),
+                   get_tag(ds, CommonTag.SERIES))
+            to_merge[uid].append(ds)
 
     return list(to_merge.items())
