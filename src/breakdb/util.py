@@ -34,7 +34,7 @@ class ColorizingLogFormatter(logging.Formatter):
         "debug": " - {}",
         "error": " \033[1;91m!!\033[0m {}",
         "info": "{}",
-        "var": "\033[1;37m{}\033[0m",
+        "var": "\033[1m{}\033[0m",
         "warning": " \033[1;93m*\033[0m {}"
     }
 
