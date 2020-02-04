@@ -85,6 +85,13 @@ class CommonTag(Enum):
     This tag is unique per series.
     """
 
+    STUDY = Tag(0x0020, 0x000d)
+    """
+    Represents the (unique) study identifier.
+    
+    This tag is unique per study.    
+    """
+
 
 @unique
 class MiscTag(Enum):
