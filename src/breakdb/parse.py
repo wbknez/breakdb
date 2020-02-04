@@ -152,7 +152,8 @@ def parse_common(ds):
     return make_tag_dict(
         get_tag(ds, CommonTag.SOP_CLASS),
         get_tag(ds, CommonTag.SOP_INSTANCE),
-        get_tag(ds, CommonTag.SERIES)
+        get_tag(ds, CommonTag.SERIES),
+        get_tag(ds, CommonTag.STUDY)
     )
 
 
