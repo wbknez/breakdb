@@ -69,9 +69,13 @@ def has_pixels(ds):
     :param ds: The dataset to search.
     :return: Whether or not DICOM image data is present.
     """
-    return has_tag(ds, PixelTag.COLUMNS) and \
+    return has_tag(ds, PixelTag.BITS) and \
+        has_tag(ds, PixelTag.COLUMNS) and \
         has_tag(ds, PixelTag.DATA) and \
-        has_tag(ds, PixelTag.ROWS)
+        has_tag(ds, PixelTag.PHOTOMETRIC_INTERPRETATION) and \
+        has_tag(ds, PixelTag.REPRESENTATION) and \
+        has_tag(ds, PixelTag.ROWS) and \
+        has_tag(ds, PixelTag.SAMPLES_PER_PIXEL)
 
 
 def has_reference(ds):
@@ -132,6 +136,9 @@ def parse_annotations(ds):
         if has_sequence(seq, AnnotationTag.OBJECT):
             for obj in get_sequence(seq, AnnotationTag.OBJECT):
                 annotations.append(parse_annotation(obj))
+
+    if not annotations:
+        raise MissingTag(AnnotationTag.OBJECT)
 
     return {AnnotationTag.SEQUENCE.value: annotations}
 
