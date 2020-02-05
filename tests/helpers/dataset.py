@@ -73,7 +73,7 @@ def create_dataset():
         return ds
 
     def create_dataset_impl(prefix=PYDICOM_ROOT_UID, n=20, excludes=None,
-                            annotations=1):
+                            annotations=1, max_cols=1920, max_rows=1200):
         """
         Create a DICOM dataset with randomized values for all possible
         project-specific tags.
@@ -85,11 +85,15 @@ def create_dataset():
         :return: A random DICOM dataset.
         """
         ds = Dataset()
+
+        cols = np.random.randint(1, max_cols)
+        rows = np.random.randint(1, max_rows)
         uid = partial(generate_uid, prefix=prefix)
 
         ds.SOPClassUID = uid()
         ds.SOPInstanceUID = uid()
         ds.SeriesInstanceUID = uid()
+        ds.StudyInstanceUID = uid()
 
         ds.GraphicAnnotationSequence = Sequence([
             create_annotations(annotations)
@@ -98,9 +102,16 @@ def create_dataset():
             create_reference_sequence(uid)
         ])
 
-        ds.Columns = np.random.randint(1, 2000)
-        ds.Rows = np.random.randint(1, 2000)
-        ds.Pixels = np.zeros((ds.Rows, ds.Columns))
+        ds.BitsAllocated = np.random.choice([1, 8, 16, 24, 32], 1)
+        ds.Columns = cols
+        ds.Rows = rows
+        ds.PhotometricInterpretation = np.random.choice(
+            ["MONOCHROME1", "MONOCHROME2", "RGB", "YBR_FULL", ""],
+            1
+        )
+        ds.PixelData = np.zeros(cols * rows)
+        ds.PixelRepresentation = np.random.choice([0, 1], 1)
+        ds.SamplesPerPixel = np.random.choice([1, 3], 1)
 
         ds.BodyPart = _create_random_string(np.random.randint(1, n))
 
