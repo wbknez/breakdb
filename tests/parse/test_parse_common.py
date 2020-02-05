@@ -33,6 +33,12 @@ class TestParseCommon:
         with pytest.raises(MissingTag):
             parse_common(ds)
 
+    def test_parse_common_throws_when_study_is_missing(self, create_dataset):
+        ds = create_dataset(excludes=[CommonTag.STUDY])
+
+        with pytest.raises(MissingTag):
+            parse_common(ds)
+
     def test_parse_common_succeeds(self, create_dataset):
         ds = create_dataset()
         parsed = parse_common(ds)
@@ -40,3 +46,4 @@ class TestParseCommon:
         match(ds, parsed, CommonTag.SOP_CLASS)
         match(ds, parsed, CommonTag.SOP_INSTANCE)
         match(ds, parsed, CommonTag.SERIES)
+        match(ds, parsed, CommonTag.STUDY)
