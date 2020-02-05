@@ -96,10 +96,15 @@ class CommonTag(Enum):
 @unique
 class MiscTag(Enum):
     """
-
+    Represents a collection of DICOM tags that specify additional useful
+    information.
     """
 
     BODY_PART = Tag(0x0018, 0x0015)
+    """
+    Represents the (specific) part of a subject's body under study for a 
+    particular DICOM file.
+    """
 
 
 @unique
@@ -107,6 +112,11 @@ class PixelTag(Enum):
     """
     Represents a collection of DICOM tags that specify how an image
     contained within is formatted.
+    """
+
+    BITS = Tag(0x0028, 0x0100)
+    """
+    Represents the number of bits per pixel.    
     """
 
     COLUMNS = Tag(0x0028, 0x0011)
@@ -126,6 +136,22 @@ class PixelTag(Enum):
     (buffer of pixel data) associated with it.
     """
 
+    PHOTOMETRIC_INTERPRETATION = Tag(0x0028, 0x0004)
+    """
+    Represents the color space that bounds the (raw) pixel data which, 
+    in turn, defines what color(s) each pixel may contain.
+    
+    For this project, most DICOM files with be in MONOCHROME1 or MONOCHROME2.
+    """
+
+    REPRESENTATION = Tag(0x0028, 0x0103)
+    """
+    Represents whether or not the (raw) pixel data is intended to be signed 
+    or unsigned.    
+    
+    This value is expected to be either 0 (unsigned) or 1 (signed).
+    """
+
     ROWS = Tag(0x0028, 0x0010)
     """
     Represents the number of rows in an image.
@@ -133,6 +159,13 @@ class PixelTag(Enum):
     Please note this is not necessarily the same as the height, as the DICOM 
     standard specifies that this may be a multiple of the vertical 
     downsampling factor.
+    """
+
+    SAMPLES_PER_PIXEL = Tag(0x0028, 0x0002)
+    """
+    Represents the number of color channels in each individual pixel.
+    
+    THis value is expected to be 1 for grayscale images, otherwise 3.
     """
 
 
