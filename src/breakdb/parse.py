@@ -10,7 +10,7 @@ from pydicom.errors import InvalidDicomError
 from breakdb.tag import CommonTag, ReferenceTag, AnnotationTag, get_tag, \
     get_tag_at, make_tag_dict, has_tag, get_sequence, has_sequence, PixelTag, \
     ScalingTag, MissingTag, MalformedSequence, MissingSequence, replace_tag, \
-    MiscTag, check_tag, check_sequence_length
+    MiscTag, check_tag, check_sequence_length, WindowingTag
 
 
 def has_annotation(ds):
@@ -100,13 +100,24 @@ def has_scaling(ds):
     format to its original values for visualization.
 
     :param ds: The dataset to search.
-    :return: Whether or not DICOM scaling data for image data is present.
+    :return: Whether or not DICOM scaling parameters for image data is present.
     """
-    return has_tag(ds, ScalingTag.CENTER) and \
-        has_tag(ds, ScalingTag.INTERCEPT) and \
+    return has_tag(ds, ScalingTag.INTERCEPT) and \
         has_tag(ds, ScalingTag.SLOPE) and \
-        has_tag(ds, ScalingTag.TYPE) and \
-        has_tag(ds, ScalingTag.WIDTH)
+        has_tag(ds, ScalingTag.TYPE)
+
+
+def has_windowing(ds):
+    """
+    Returns whether or not the specified DICOM dataset contains windowing
+    information to clip imaging information (pixels) into a specified range.
+
+    :param ds: The dataset to search.
+    :return: Whether or not DICOM windowing parameters for image data is
+    present.
+    """
+    return has_tag(ds, WindowingTag.CENTER) and \
+        has_tag(ds, WindowingTag.WIDTH)
 
 
 def parse_annotation(ds):
@@ -193,24 +204,6 @@ def parse_pixels(ds):
     )
 
 
-def parse_scaling(ds):
-    """
-    Parses and returns a dictionary of image scaling information in a DICOM
-    dataset for this project.
-
-    :param ds: The dataset to search.
-    :return: A dictionary of image scaling information.
-    :raises MissingTag: If one or more tags could not be found.
-    """
-    return make_tag_dict(
-        get_tag(ds, ScalingTag.CENTER),
-        get_tag(ds, ScalingTag.INTERCEPT),
-        get_tag(ds, ScalingTag.SLOPE),
-        get_tag(ds, ScalingTag.TYPE),
-        get_tag(ds, ScalingTag.WIDTH)
-    )
-
-
 def parse_reference(ds):
     """
     Parses and returns a dictionary of the values of all tags associated
@@ -231,6 +224,37 @@ def parse_reference(ds):
             get_tag(obj, ReferenceTag.SOP_INSTANCE),
             get_tag(seq, ReferenceTag.SERIES)
         )}
+
+
+def parse_scaling(ds):
+    """
+    Parses and returns a dictionary of image scaling information in a DICOM
+    dataset for this project.
+
+    :param ds: The dataset to search.
+    :return: A dictionary of image scaling information.
+    :raises MissingTag: If one or more tags could not be found.
+    """
+    return make_tag_dict(
+        get_tag(ds, ScalingTag.INTERCEPT),
+        get_tag(ds, ScalingTag.SLOPE),
+        get_tag(ds, ScalingTag.TYPE),
+    )
+
+
+def parse_windowing(ds):
+    """
+    Parses and returns a dictionary of image windowing information in a
+    DICOM dataset for this project.
+
+    :param ds: The dataset to search.
+    :return: A dictionary of image windowing information.
+    :raises MissingTag: If one or more tags could not be found.
+    """
+    return make_tag_dict(
+        get_tag(ds, WindowingTag.CENTER),
+        get_tag(ds, WindowingTag.WIDTH)
+    )
 
 
 def parse_dataset(ds):
@@ -258,6 +282,9 @@ def parse_dataset(ds):
 
     if has_scaling(ds):
         parsed.update(parse_scaling(ds))
+
+    if has_windowing(ds):
+        parsed.update(parse_windowing(ds))
 
     return parsed
 
