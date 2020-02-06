@@ -4,13 +4,12 @@ references work as intended.
 """
 import numpy as np
 import pytest
+from pydicom import Dataset
 
 from breakdb.parse import has_annotations, has_annotation, \
     parse_annotation, parse_annotations
 from breakdb.tag import AnnotationTag, get_tag, get_tag_at, \
     MissingTag, MissingSequence
-from tests.helpers.assertion import match
-
 
 class TestParseAnnotations:
     """
@@ -38,65 +37,11 @@ class TestParseAnnotations:
 
         assert has_annotations(ds)
 
-    def test_parse_annotation_throws_when_count_is_missing(self,
-                                                           create_dataset):
-        ds = create_dataset(annotations=1)
-
-        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
-        obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
-
-        del obj[AnnotationTag.COUNT.value]
+    def test_parse_annotation_throws_when_data_is_missing(self):
+        ds = Dataset()
 
         with pytest.raises(MissingTag):
-            parse_annotation(obj)
-
-    def test_parse_annotation_throws_when_data_is_missing(self,
-                                                          create_dataset):
-        ds = create_dataset(annotations=1)
-
-        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
-        obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
-
-        del obj[AnnotationTag.DATA.value]
-
-        with pytest.raises(MissingTag):
-            parse_annotation(obj)
-
-    def test_parse_annotation_throws_when_dimensions_is_missing(self,
-                                                                create_dataset):
-        ds = create_dataset(annotations=1)
-
-        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
-        obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
-
-        del obj[AnnotationTag.DIMENSIONS.value]
-
-        with pytest.raises(MissingTag):
-            parse_annotation(obj)
-
-    def test_parse_annotation_throws_when_type_is_missing(self,
-                                                          create_dataset):
-        ds = create_dataset(annotations=1)
-
-        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
-        obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
-
-        del obj[AnnotationTag.TYPE.value]
-
-        with pytest.raises(MissingTag):
-            parse_annotation(obj)
-
-    def test_parse_annotation_throws_when_units_is_missing(self,
-                                                           create_dataset):
-        ds = create_dataset(annotations=1)
-
-        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
-        obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
-
-        del obj[AnnotationTag.UNITS.value]
-
-        with pytest.raises(MissingTag):
-            parse_annotation(obj)
+            parse_annotation(ds)
 
     def test_parse_annotation_succeeds(self, create_dataset):
         ds = create_dataset(annotations=1)
@@ -104,55 +49,53 @@ class TestParseAnnotations:
         seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
         obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
 
+        annots = [int(x) for x in get_tag(obj, AnnotationTag.DATA).value]
         parsed = parse_annotation(obj)
 
-        match(obj, parsed, AnnotationTag.COUNT)
-        match(obj, parsed, AnnotationTag.DATA)
-        match(obj, parsed, AnnotationTag.DIMENSIONS)
-        match(obj, parsed, AnnotationTag.TYPE)
-        match(obj, parsed, AnnotationTag.UNITS)
+        assert len(parsed) == len(annots)
+        assert parsed == annots
 
-    def test_parse_annotations_succeeds_with_single_annotation(self,
-                                                               create_dataset):
-        ds = create_dataset(annotations=1)
-
-        parsed = parse_annotations(ds)
-        annots = parsed[AnnotationTag.SEQUENCE.value]
-
-        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
-        obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
-
-        assert len(annots) == 1
-        match(obj, annots[0], AnnotationTag.COUNT)
-        match(obj, annots[0], AnnotationTag.DATA)
-        match(obj, annots[0], AnnotationTag.DIMENSIONS)
-        match(obj, annots[0], AnnotationTag.TYPE)
-        match(obj, annots[0], AnnotationTag.UNITS)
-
-    def test_parse_annotations_succeeds_with_mant_annotation(self,
-                                                             create_dataset):
-        n = np.random.randint(1, 20)
-        ds = create_dataset(annotations=n)
-
-        parsed = parse_annotations(ds)
-        annots = parsed[AnnotationTag.SEQUENCE.value]
-
-        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
-        objs = get_tag(seq, AnnotationTag.OBJECT)
-
-        assert len(annots) == n
-
-        for annot, obj in zip(annots, objs):
-            match(obj, annot, AnnotationTag.COUNT)
-            match(obj, annot, AnnotationTag.DATA)
-            match(obj, annot, AnnotationTag.DIMENSIONS)
-            match(obj, annot, AnnotationTag.TYPE)
-            match(obj, annot, AnnotationTag.UNITS)
-
-    def test_parse_annotations_throws_when_sequence_is_missing(self,
-                                                               create_dataset):
+    def test_parse_annotations_throws_when_no_annotation_is_present(self,
+                                                                create_dataset):
         ds = create_dataset(excludes=[AnnotationTag.SEQUENCE])
 
         with pytest.raises(MissingSequence):
             parse_annotations(ds)
 
+    def test_parse_annotations_throws_when_annotation_is_empty(self,
+                                                               create_dataset):
+        ds = create_dataset(annotations=0)
+
+        with pytest.raises(MissingTag):
+            parse_annotations(ds)
+
+    def test_parse_annotations_succeeds_with_single_annotation(self,
+                                                               create_dataset):
+        ds = create_dataset(annotations=1)
+
+        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
+        obj = get_tag_at(seq, 0, AnnotationTag.OBJECT)
+
+        ds_annots = [int(x) for x in get_tag(obj, AnnotationTag.DATA)]
+        parsed = parse_annotations(ds)
+        parsed_annots = get_tag(parsed, AnnotationTag.SEQUENCE)
+
+        assert len(parsed_annots) == 1
+        assert parsed_annots[0] == ds_annots
+
+    def test_parse_annotations_succeeds_with_many_annotation(self,
+                                                             create_dataset):
+        n = np.random.randint(2, 20)
+        ds = create_dataset(annotations=n)
+
+        seq = get_tag_at(ds, 0, AnnotationTag.SEQUENCE)
+        parsed = parse_annotations(ds)
+        parsed_annots = get_tag(parsed, AnnotationTag.SEQUENCE)
+
+        assert len(parsed_annots) == n
+
+        for index, annot in enumerate(parsed_annots):
+            obj = get_tag_at(seq, index, AnnotationTag.OBJECT)
+            ds_annots = [int(x) for x in get_tag(obj, AnnotationTag.DATA)]
+
+            assert parsed_annots[index] == ds_annots
