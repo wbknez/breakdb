@@ -31,6 +31,14 @@ class TestMergeTag:
         WindowingTag.WIDTH
     ]
 
+    def test_merge_tag_does_nothing_if_both_tags_are_missing(self):
+        dest = {}
+        src = {}
+
+        for tag in TestMergeTag.TAGS:
+            assert merge_tag(src, dest, tag) == dest
+            assert merge_tag(src, dest, tag) == {}
+
     def test_merge_tag_does_nothing_if_source_tag_missing(self,
                                                           create_dataset):
         ds = create_dataset()
