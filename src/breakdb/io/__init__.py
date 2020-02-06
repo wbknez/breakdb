@@ -25,12 +25,14 @@ _WRITERS = {
 COLUMN_NAMES = [
     "ID",               # The SOP instance UID.
     "Series",           # The series UID.
+    "Study",            # The study UID.
     "Classification",   # Whether or not a fracture is present (ground-truth).
     "Body Part",        # The type of body part imaged.
     "Width",            # The image width (in pixels).
     "Height",           # The image height (in pixels).
     "File Path",        # Location of image file on disk.
-    "Scaling",          # Visual transformation information (slope, etc.).
+    "Scaling",          # Whether there is any scaling information.
+    "Windowing",        # Whether or not there is any windowing information.
     "Annotation"        # All discovered annotations.
 ]
 

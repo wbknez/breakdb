@@ -43,18 +43,16 @@ def make_database_entry(merged):
     return [
         get_tag(merged, CommonTag.SOP_INSTANCE),
         get_tag(merged, CommonTag.SERIES),
+        get_tag(merged, CommonTag.STUDY),
         len(get_tag(merged, AnnotationTag.SEQUENCE)) > 0,
         get_tag(merged, MiscTag.BODY_PART),
         get_tag(merged, PixelTag.COLUMNS),
         get_tag(merged, PixelTag.ROWS),
         get_tag(merged, PixelTag.DATA),
-        [
-            get_tag(merged, ScalingTag.CENTER),
-            get_tag(merged, ScalingTag.WIDTH),
-            get_tag(merged, ScalingTag.SLOPE),
-            get_tag(merged, ScalingTag.INTERCEPT),
-            get_tag(merged, ScalingTag.TYPE)
-        ],
+        has_tag(merged, ScalingTag.INTERCEPT) and \
+            has_tag(merged, ScalingTag.SLOPE),
+        has_tag(merged, WindowingTag.CENTER) and \
+            has_tag(merged, WindowingTag.WIDTH),
         get_tag(merged, AnnotationTag.SEQUENCE)
     ]
 
