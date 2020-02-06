@@ -6,4 +6,6 @@ dependencies:
   - python=3
   - pytest
   - pandas
-  - pydicom
+  - pip
+  - pip:
+    - "--editable=git+https://github.com/pydicom/pydicom.git#egg=pydicom"
