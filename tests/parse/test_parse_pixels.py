@@ -1,5 +1,5 @@
 """
-Contains unit tests to ensure that all functions involved in parsing common
+Contains unit tests to ensure that all functions involved in parsing pixel
 DICOM tags work as intended.
 """
 import pytest
