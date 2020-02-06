@@ -102,16 +102,16 @@ def create_dataset():
             create_reference_sequence(uid)
         ])
 
-        ds.BitsAllocated = np.random.choice([1, 8, 16, 24, 32], 1)
+        ds.BitsAllocated = np.random.choice([1, 8, 16, 24, 32], 1)[0]
         ds.Columns = cols
         ds.Rows = rows
         ds.PhotometricInterpretation = np.random.choice(
-            ["MONOCHROME1", "MONOCHROME2", "RGB", "YBR_FULL", ""],
+            ["MONOCHROME1", "MONOCHROME2", "RGB", "YBR_FULL", "YBR_FULL_422"],
             1
-        )
+        )[0]
         ds.PixelData = np.zeros(cols * rows)
-        ds.PixelRepresentation = np.random.choice([0, 1], 1)
-        ds.SamplesPerPixel = np.random.choice([1, 3], 1)
+        ds.PixelRepresentation = np.random.choice([0, 1], 1)[0]
+        ds.SamplesPerPixel = np.random.choice([1, 3], 1)[0]
 
         ds.BodyPartExamined = _create_random_string(np.random.randint(1, n))
 
