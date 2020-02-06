@@ -213,11 +213,6 @@ class ScalingTag(Enum):
     is converted from a storage format to visualization.
     """
 
-    CENTER = Tag(0x0028, 0x1050)
-    """
-    Represents the scaled window center.
-    """
-
     INTERCEPT = Tag(0x0028, 0x1052)
     """
     Represents the intercept of a linear transformation between pixel formats.
@@ -231,6 +226,18 @@ class ScalingTag(Enum):
     TYPE = Tag(0x0028, 0x1054)
     """
     Represents the units of visualization of a data image.
+    """
+
+
+class WindowingTag(Enum):
+    """
+    Represents a collection of DICOM tags that specify how pixel data is
+    clipped, or bounded, to fit within a specific range.
+    """
+
+    CENTER = Tag(0x0028, 0x1050)
+    """
+    Represents the scaled window center.
     """
 
     WIDTH = Tag(0x0028, 0x1051)
