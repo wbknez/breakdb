@@ -13,6 +13,15 @@ from breakdb.tag import CommonTag, ReferenceTag, AnnotationTag, get_tag, \
     MiscTag, check_tag, check_sequence_length, WindowingTag
 
 
+class ParsingError(Exception):
+    """
+    Represents an exception that is raised when a problem is encountered
+    while parsing a DICOM file for this project.
+    """
+    def init(self, file_path):
+        super().__init__(f"Could not parse DICOM file: {file_path}")
+
+
 def has_annotation(ds):
     """
     Returns whether or not the specified dataset contains a single annotation.
@@ -338,5 +347,4 @@ def parse_dicom(file_path, skip_broken):
             logger.warning("  Reason: {}.", ex)
             return file_path, {}
         else:
-            logger.error("Could not parse DICOM file: {}.", file_path)
-            raise
+            raise ParsingError(file_path) from ex

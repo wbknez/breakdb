@@ -6,7 +6,17 @@ import logging
 from collections import defaultdict
 
 from breakdb.tag import has_tag, get_tag, CommonTag, AnnotationTag, \
-    ScalingTag, PixelTag, MiscTag, MissingTag
+    ScalingTag, PixelTag, MiscTag, MissingTag, WindowingTag
+
+
+class MergingError(Exception):
+    """
+    Represents an exception that is raised when a problem is encountered
+    while parsing a DICOM file for this project.
+    """
+
+    def __init__(self, uid):
+        super().__init__(f"Could not merge datasets for: {uid}")
 
 
 class TagConflict(Exception):
@@ -115,15 +125,16 @@ def merge_dataset(src, dest):
         CommonTag.SOP_CLASS,
         CommonTag.SOP_INSTANCE,
         CommonTag.SERIES,
+        CommonTag.STUDY,
         MiscTag.BODY_PART,
         PixelTag.COLUMNS,
         PixelTag.DATA,
         PixelTag.ROWS,
-        ScalingTag.CENTER,
         ScalingTag.INTERCEPT,
         ScalingTag.SLOPE,
         ScalingTag.TYPE,
-        ScalingTag.WIDTH
+        WindowingTag.CENTER,
+        WindowingTag.WIDTH
     ]
 
     for tag in tags:
@@ -161,8 +172,7 @@ def merge_dicom(parsed, skip_broken):
                 logger.warning("Could not merge datasets for: {}.", uid[0])
                 logger.warning("  Reason: {}.", tc)
             else:
-                logger.error("Could not merge datasets for: {}.", uid[0])
-                raise
+                raise MergingError(uid[0]) from tc
 
     try:
         return make_database_entry(merged)
