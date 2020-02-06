@@ -113,7 +113,14 @@ def create_dataset():
         ds.PixelRepresentation = np.random.choice([0, 1], 1)
         ds.SamplesPerPixel = np.random.choice([1, 3], 1)
 
-        ds.BodyPart = _create_random_string(np.random.randint(1, n))
+        ds.BodyPartExamined = _create_random_string(np.random.randint(1, n))
+
+        ds.RescaleSlope = np.random.rand()
+        ds.RescaleIntercept = np.random.rand()
+        ds.RescaleType = "HU"
+
+        ds.WindowCenter = np.random.randint(1, 4096)
+        ds.WindowWidth = np.random.randint(1, 4096)
 
         if excludes:
             for exclude in excludes:
