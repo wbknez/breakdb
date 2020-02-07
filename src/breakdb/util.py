@@ -1,6 +1,7 @@
 """
 Contains classes and functions that are intended as utilities.
 """
+import itertools
 import logging
 import os
 import string
@@ -161,6 +162,24 @@ def initialize_logging(quiet, use_color, verbose):
     logger.addHandler(console_handler)
 
     logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+
+
+def remove_duplicates(llist):
+    """
+    Removes any and all duplicate entries in the specified list.
+
+    This function is intended to be used during dataset merging and
+    therefore must be able to handle list-of-lists.
+
+    :param llist: The list to prune.
+    :return: A list of unique elements only.
+    """
+    if not llist:
+        return []
+
+    llist.sort()
+
+    return [x for x, _ in itertools.groupby(llist)]
 
 
 def supports_color_output():

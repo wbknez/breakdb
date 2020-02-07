@@ -7,6 +7,7 @@ from collections import defaultdict
 
 from breakdb.tag import has_tag, get_tag, CommonTag, AnnotationTag, \
     ScalingTag, PixelTag, MiscTag, MissingTag, WindowingTag
+from breakdb.util import remove_duplicates
 
 
 class MergingError(Exception):
@@ -56,7 +57,7 @@ def make_database_entry(merged):
             has_tag(merged, ScalingTag.SLOPE),
         has_tag(merged, WindowingTag.CENTER) and \
             has_tag(merged, WindowingTag.WIDTH),
-        get_tag(merged, AnnotationTag.SEQUENCE)
+        remove_duplicates(get_tag(merged, AnnotationTag.SEQUENCE))
     ]
 
 
