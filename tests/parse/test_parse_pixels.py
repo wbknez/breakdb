@@ -14,8 +14,15 @@ class TestParsePixels:
     Test suite for :function: 'parse_pixels'.
     """
 
-    def test_has_pixels_is_false_when_no_bits_is_present(self, create_dataset):
-        ds = create_dataset(excludes=[PixelTag.BITS])
+    def test_has_pixels_is_false_when_no_bits_alloc_is_present(self,
+                                                               create_dataset):
+        ds = create_dataset(excludes=[PixelTag.BITS_ALLOCATED])
+
+        assert not has_pixels(ds)
+
+    def test_has_pixels_is_false_when_no_bits_stored_is_present(self,
+                                                                create_dataset):
+        ds = create_dataset(excludes=[PixelTag.BITS_STORED])
 
         assert not has_pixels(ds)
 

@@ -78,7 +78,8 @@ def has_pixels(ds):
     :param ds: The dataset to search.
     :return: Whether or not DICOM image data is present.
     """
-    return has_tag(ds, PixelTag.BITS) and \
+    return has_tag(ds, PixelTag.BITS_ALLOCATED) and \
+        has_tag(ds, PixelTag.BITS_STORED) and \
         has_tag(ds, PixelTag.COLUMNS) and \
         has_tag(ds, PixelTag.DATA) and \
         has_tag(ds, PixelTag.PHOTOMETRIC_INTERPRETATION) and \
