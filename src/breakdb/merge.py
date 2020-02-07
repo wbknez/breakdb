@@ -26,8 +26,10 @@ class TagConflict(Exception):
     expected to be identical to another source.
     """
 
-    def __init__(self, tag):
-        super().__init__(f"{tag} differs between expected identical datasets.")
+    def __init__(self, tag, src, dest):
+        super().__init__(f"{tag} differs between expected identical "
+                         f"datasets.  Value should be "
+                         f"{get_tag(dest, tag)} but is {get_tag(src, tag)}.")
 
 
 def make_database_entry(merged):
@@ -45,7 +47,8 @@ def make_database_entry(merged):
         get_tag(merged, CommonTag.SERIES),
         get_tag(merged, CommonTag.STUDY),
         len(get_tag(merged, AnnotationTag.SEQUENCE)) > 0,
-        get_tag(merged, MiscTag.BODY_PART),
+        get_tag(merged, MiscTag.BODY_PART) \
+            if has_tag(merged, MiscTag.BODY_PART) else "Unknown",
         get_tag(merged, PixelTag.COLUMNS),
         get_tag(merged, PixelTag.ROWS),
         get_tag(merged, PixelTag.DATA),
@@ -103,7 +106,7 @@ def merge_tag(src, dest, tag):
 
     if has_tag(dest, tag) and \
             get_tag(dest, tag) != get_tag(src, tag):
-        raise TagConflict(tag)
+        raise TagConflict(tag, src, dest)
 
     return {tag.value: get_tag(src, tag)}
 
