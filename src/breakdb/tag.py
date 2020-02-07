@@ -114,9 +114,15 @@ class PixelTag(Enum):
     contained within is formatted.
     """
 
-    BITS = Tag(0x0028, 0x0100)
+    BITS_ALLOCATED = Tag(0x0028, 0x0100)
     """
-    Represents the number of bits per pixel.    
+    Represents the number of bits allocated per pixel.    
+    """
+
+    BITS_STORED = Tag(0x0028, 0x0101)
+    """
+    Represents the number of bits used (out of the total number allocated) per 
+    pixel.    
     """
 
     COLUMNS = Tag(0x0028, 0x0011)
@@ -165,7 +171,7 @@ class PixelTag(Enum):
     """
     Represents the number of color channels in each individual pixel.
     
-    THis value is expected to be 1 for grayscale images, otherwise 3.
+    This value is expected to be 1 for grayscale images, otherwise 3.
     """
 
 
@@ -238,6 +244,12 @@ class WindowingTag(Enum):
     CENTER = Tag(0x0028, 0x1050)
     """
     Represents the scaled window center.
+    """
+
+    FUNCTION = Tag(0x0028, 0x1056)
+    """
+    Represents the kind of function to use with a scaled window center and 
+    width.
     """
 
     WIDTH = Tag(0x0028, 0x1051)
