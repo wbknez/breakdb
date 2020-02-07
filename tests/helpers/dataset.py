@@ -103,6 +103,7 @@ def create_dataset():
         ])
 
         ds.BitsAllocated = np.random.choice([1, 8, 16, 24, 32], 1)[0]
+        ds.BitsStored = np.random.randint(0, ds.BitsAllocated)
         ds.Columns = cols
         ds.Rows = rows
         ds.PhotometricInterpretation = np.random.choice(
@@ -119,6 +120,9 @@ def create_dataset():
         ds.RescaleIntercept = np.random.rand()
         ds.RescaleType = "HU"
 
+        ds.VOILUTFunction = np.random.choice([
+            "LINEAR", "LINEAR_EXACT", "SIGMOID"
+        ], 1)[0]
         ds.WindowCenter = np.random.randint(1, 4096)
         ds.WindowWidth = np.random.randint(1, 4096)
 
