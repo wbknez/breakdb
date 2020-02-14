@@ -2,11 +2,12 @@
 Contains unit tests to ensure bounding boxes are converted correctly from
 a DICOM annotation to a Pascal VOC compatible format.
 """
-from xml.etree.ElementTree import Element, SubElement, dump
+from xml.etree.ElementTree import Element, SubElement
 
 import numpy as np
 
 from breakdb.io.voc import create_bounding_box
+from tests.helpers.xml import match
 
 
 class TestCreateBoundingBox:
@@ -37,16 +38,16 @@ class TestCreateBoundingBox:
         y = coords[1::2]
 
         bndbox = create_bounding_box(coords)
-
         expected = Element('bndbox')
-        x_max = SubElement(expected, 'xmax')
-        y_max = SubElement(expected, 'ymin')
+
         x_min = SubElement(expected, 'xmin')
         y_min = SubElement(expected, 'ymin')
+        x_max = SubElement(expected, 'xmax')
+        y_max = SubElement(expected, 'ymax')
 
+        x_min.text = str(np.min(x))
+        y_min.text = str(np.min(y))
         x_max.text = str(np.max(x))
         y_max.text = str(np.max(y))
-        x_min.text = str(np.min(y))
-        y_min.text = str(np.min(y))
 
-        assert dump(bndbox) == dump(expected)
+        match(bndbox, expected)
