@@ -10,7 +10,7 @@ from pydicom import Dataset, Sequence
 from pydicom.uid import generate_uid, PYDICOM_ROOT_UID
 
 
-def _create_random_string(n=20):
+def create_random_string(n=20):
     """
     Creates a string of the specified length consisting of random ASCII
     characters and digits.
@@ -114,7 +114,7 @@ def create_dataset():
         ds.PixelRepresentation = np.random.choice([0, 1], 1)[0]
         ds.SamplesPerPixel = np.random.choice([1, 3], 1)[0]
 
-        ds.BodyPartExamined = _create_random_string(np.random.randint(1, n))
+        ds.BodyPartExamined = create_random_string(np.random.randint(1, n))
 
         ds.RescaleSlope = np.random.rand()
         ds.RescaleIntercept = np.random.rand()
