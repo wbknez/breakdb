@@ -6,7 +6,7 @@ import pytest
 
 from breakdb.parse import has_windowing, parse_windowing
 from breakdb.tag import WindowingTag, MissingTag
-from tests.helpers.assertion import match
+from tests.helpers.tag import match
 
 
 class TestParseWindowing:

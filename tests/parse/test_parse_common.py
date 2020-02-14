@@ -6,7 +6,7 @@ import pytest
 
 from breakdb.parse import parse_common
 from breakdb.tag import CommonTag, MissingTag
-from tests.helpers.assertion import match
+from tests.helpers.tag import match
 
 
 class TestParseCommon:

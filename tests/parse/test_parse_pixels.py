@@ -6,7 +6,7 @@ import pytest
 
 from breakdb.parse import has_pixels, parse_pixels
 from breakdb.tag import PixelTag, MissingTag
-from tests.helpers.assertion import match
+from tests.helpers.tag import match
 
 
 class TestParsePixels:

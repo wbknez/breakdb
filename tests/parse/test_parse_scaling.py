@@ -6,7 +6,7 @@ import pytest
 
 from breakdb.parse import has_scaling, parse_scaling
 from breakdb.tag import ScalingTag, MissingTag
-from tests.helpers.assertion import match
+from tests.helpers.tag import match
 
 
 class TestParseScaling:

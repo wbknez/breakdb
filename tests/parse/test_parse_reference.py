@@ -7,7 +7,7 @@ import pytest
 from breakdb.parse import has_reference, parse_reference
 from breakdb.tag import ReferenceTag, get_tag_at, MalformedSequence, \
     MissingSequence, MissingTag
-from tests.helpers.assertion import match
+from tests.helpers.tag import match
 
 
 class TestParseReference:

@@ -6,7 +6,7 @@ import pytest
 
 from breakdb.parse import has_misc, parse_misc
 from breakdb.tag import MiscTag, MissingTag
-from tests.helpers.assertion import match
+from tests.helpers.tag import match
 
 
 class TestParseMisc:
