@@ -6,12 +6,43 @@ import os
 from xml.etree.ElementTree import Element
 
 
-def create_annotation(file_path, ):
+def create_annotation(file_path, width, height, depth, annotations):
     """
+    Creates a Pascal VOC compatible XML annotation for the specified file
+    with the specified attributes (width, height, and depth) with the
+    specified collection of annotations, if any.
 
+    :param file_path: The path to an annotated image.
+    :param width: The width of an annotated image.
+    :param height: The height of an annotated image.
+    :param depth: The depth of an annotated image.
+    :param annotations: The collection of annotations (optional).
     :return:
     """
-    pass
+    xml = create_element("annotation", children=[
+        create_element("folder",
+                       text_value=os.path.basename(os.path.dirname(file_path))),
+        create_element("filename", text_value=os.path.basename(file_path)),
+        create_element("path", text_value=file_path),
+        create_element("source", children=[
+            create_element("database", text_value="Unknown")
+        ]),
+        create_element("size", children=[
+            create_element("width", text_value=str(width)),
+            create_element("height", text_value=str(height)),
+            create_element("depth", text_value=str(depth))
+        ]),
+        create_element("segmented", text_value="0"),
+
+    ])
+
+    if annotations:
+        obj_name = f"{os.path.basename(os.path.splitext(file_path)[0])}-"
+
+        for index, annot in enumerate(annotations):
+            xml.append(create_object(f"{obj_name}{str(index + 1)}", annot))
+
+    return xml
 
 
 def create_bounding_box(coords):
@@ -25,11 +56,11 @@ def create_bounding_box(coords):
     x = [value for value in coords[0::2]]
     y = [value for value in coords[1::2]]
 
-    return create_element('bndbox', children=[
-        create_element('xmin', text_value=str(min(x))),
-        create_element('ymin', text_value=str(min(y))),
-        create_element('xmax', text_value=str(max(x))),
-        create_element('ymax', text_value=str(max(y))),
+    return create_element("bndbox", children=[
+        create_element("xmin", text_value=str(min(x))),
+        create_element("ymin", text_value=str(min(y))),
+        create_element("xmax", text_value=str(max(x))),
+        create_element("ymax", text_value=str(max(y))),
     ])
 
 
