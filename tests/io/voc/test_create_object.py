@@ -1,5 +1,5 @@
 """
-Contains unit tests to ensure individual annotation objects are created
+Contains unit tests to ensure individual image annotation objects are created
 correctly in a Pascal VOC compatible format.
 """
 from xml.etree.ElementTree import Element, SubElement
@@ -13,7 +13,7 @@ from tests.helpers.xml import match
 
 class TestCreateBoundingBox:
     """
-    Test suite for :function: 'create_object'.
+    Test suite for :function: "create_object".
     """
 
     def test_create_object_creates_well_formed_xml(self):
@@ -27,18 +27,18 @@ class TestCreateBoundingBox:
         obj_name = create_random_string(20)
 
         obj = create_object(obj_name, coords)
-        expected = Element('object')
+        expected = Element("object")
 
-        name = SubElement(expected, 'name')
-        pose = SubElement(expected, 'pose')
-        truncated = SubElement(expected, 'truncated')
-        difficult = SubElement(expected, 'difficult')
-        bndbox = SubElement(expected, 'bndbox')
+        name = SubElement(expected, "name")
+        pose = SubElement(expected, "pose")
+        truncated = SubElement(expected, "truncated")
+        difficult = SubElement(expected, "difficult")
+        bndbox = SubElement(expected, "bndbox")
 
-        x_min = SubElement(bndbox, 'xmin')
-        y_min = SubElement(bndbox, 'ymin')
-        x_max = SubElement(bndbox, 'xmax')
-        y_max = SubElement(bndbox, 'ymax')
+        x_min = SubElement(bndbox, "xmin")
+        y_min = SubElement(bndbox, "ymin")
+        x_max = SubElement(bndbox, "xmax")
+        y_max = SubElement(bndbox, "ymax")
 
         name.text = obj_name
         pose.text = "Unspecified"

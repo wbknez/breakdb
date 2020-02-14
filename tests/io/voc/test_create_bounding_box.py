@@ -40,10 +40,10 @@ class TestCreateBoundingBox:
         bndbox = create_bounding_box(coords)
         expected = Element('bndbox')
 
-        x_min = SubElement(expected, 'xmin')
-        y_min = SubElement(expected, 'ymin')
-        x_max = SubElement(expected, 'xmax')
-        y_max = SubElement(expected, 'ymax')
+        x_min = SubElement(expected, "xmin")
+        y_min = SubElement(expected, "ymin")
+        x_max = SubElement(expected, "xmax")
+        y_max = SubElement(expected, "ymax")
 
         x_min.text = str(np.min(x))
         y_min.text = str(np.min(y))
