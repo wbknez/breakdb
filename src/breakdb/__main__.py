@@ -6,7 +6,8 @@ The main driver for the fracture (break) detection database project.
 import sys
 from argparse import ArgumentParser
 
-from breakdb.action import print_tags, create_database, export_database
+from breakdb.action import print_tags, create_database, export_database, \
+    convert_to_voc
 from breakdb.util import initialize_logging, supports_color_output
 
 
@@ -30,6 +31,21 @@ def parse_args():
                           help="enable verbose console output", default=False)
 
     subparsers = parser.add_subparsers(dest="subparsers", required=True)
+
+    convert = subparsers.add_parser(name="convert",
+                                    description="convert a database to "
+                                                "Pascal VOC format with "
+                                                "associated file structure")
+
+    convert.set_defaults(func=convert_to_voc)
+
+    convert.add_argument("-d", "--directory", type=str,
+                         help="base directory for Pascal VOC hierarchy",
+                         required=True)
+    convert.add_argument("-p", "--parallel", type=int,
+                         help="number of parallel processes", default=2)
+    convert.add_argument("DATABASE", type=str,
+                         help="path to database to convert")
 
     create = subparsers.add_parser(name="create",
                                    description="create a database from one "
