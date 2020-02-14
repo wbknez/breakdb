@@ -2,8 +2,14 @@
 Contains classes and functions pertaining to the creation of Pascal VOC
 datasets from a collated DICOM database.
 """
+import logging
 import os
-from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import Element, ElementTree
+
+from PIL import Image
+from pandas import np
+
+from breakdb.image import read_image_from_database
 
 
 def create_annotation(file_path, width, height, depth, annotations):
@@ -74,7 +80,7 @@ def create_directory_structure(dir_path):
         os.mkdir(dir_path)
 
     os.mkdir(os.path.join(dir_path, "Annotations"))
-    os.mkdir(os.path.join(dir_path, "Images"))
+    os.mkdir(os.path.join(dir_path, "JPEGImages"))
     os.mkdir(os.path.join(dir_path, "ImageSets"))
     os.mkdir(os.path.join(dir_path, "ImageSets/Main"))
 
@@ -119,3 +125,53 @@ def create_object(name, coords):
         create_element("difficult", text_value="0"),
         create_bounding_box(coords)
     ])
+
+
+def convert_entry_to_voc(index, db, annotation_path, image_path):
+    """
+    Converts a single entry with the specified index in the specified
+    database to a Pascal VOC compatible annotation with associated image
+    that is stored in the specified path.
+
+    :param index: The (row) index to use.
+    :param db: The database to search.
+    :param annotation_path: The Pascal VOC annotation storage path.
+    :param image_path: The Pascal VOC image storage path.
+    """
+    logger = logging.getLogger(__name__)
+
+    base_name = f"{index:0{len(str(len(db)))}}"
+    ds = db.iloc[index, :]
+    image_path = os.path.join(image_path, base_name) + ".png"
+    xml_path = os.path.join(annotation_path, base_name) + ".xml"
+
+    logger.info("Exporting row: {} using base name: {}.", index, base_name)
+
+    logger.debug("Loading image for row: {} with file name: {}.", index,
+                 ds["File Path"])
+    arr = read_image_from_database(index, db,
+                                   coerce_to_original_data_type=True)
+
+    # FIXME: Implement correct image manipulation.
+    arr = arr + arr.min()
+    arr = arr / arr.max()
+    arr = arr.astype(np.int32)
+
+    image = Image.fromarray(arr)
+
+    logger.debug("Creating VOC annotation for row: {}.", index)
+    xml = create_annotation(xml_path, image.width, image.height,
+                            1 if image.mode == "L" else 3, ds["Annotation"])
+
+    logger.debug("Saving image for row: {} to: {}.", index, image_path)
+    try:
+        image.save(image_path)
+        print("Wrote: {} successfully.", image_path)
+    except Exception as ex:
+        print("Could not write: " + image_path)
+        print(ex)
+
+    logger.debug("Saving VOC annotation for row: {} to: {}.", index, xml_path)
+    ElementTree(xml).write(xml_path)
+
+
