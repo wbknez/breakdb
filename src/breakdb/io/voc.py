@@ -16,9 +16,11 @@ def create_annotation(file_path, ):
 
 def create_bounding_box(coords):
     """
+    Converts the specified collection of coordinates into a Pascal VOC
+    compatible bounding box.
 
     :param coords: The DICOM annotation as a list of single coordinates.
-    :return:
+    :return: A Pascal VOC bounding box.
     """
     x = [value for value in coords[0::2]]
     y = [value for value in coords[1::2]]
@@ -41,6 +43,7 @@ def create_directory_structure(dir_path):
         os.mkdir(dir_path)
 
     os.mkdir(os.path.join(dir_path, "Annotations"))
+    os.mkdir(os.path.join(dir_path, "Images"))
     os.mkdir(os.path.join(dir_path, "ImageSets"))
     os.mkdir(os.path.join(dir_path, "ImageSets/Main"))
 
@@ -71,10 +74,12 @@ def create_element(name, text_value=None, children=None, *args, **kwargs):
 
 def create_object(name, coords):
     """
+    Converts the specified collection of coordinates and associated
+    identifier into a single Pascal VOC compatible annotation.
 
-    :param name:
-    :param coords:
-    :return:
+    :param name: The unique annotation identifier to use.
+    :param coords: The DICOM annotation as a list of single coordinates.
+    :return: A Pascal VOC compatible annotation.
     """
     return create_element("object", children=[
         create_element("name", text_value=name),
