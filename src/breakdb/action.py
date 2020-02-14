@@ -3,6 +3,7 @@ Contains classes and functions related to all actions that may be invoked
 via the command line.
 """
 import logging
+import os
 from enum import IntEnum
 from functools import partial
 from multiprocessing.pool import Pool
@@ -13,6 +14,7 @@ from pydicom import dcmread
 
 from breakdb.io import filter_files, COLUMN_NAMES, write_database, \
     read_database
+from breakdb.io.voc import create_directory_structure, convert_entry_to_voc
 from breakdb.merge import organize_parsed, merge_dicom
 from breakdb.parse import parse_dicom
 from breakdb.util import format_dataset
@@ -138,5 +140,36 @@ def print_tags(args):
         return ExitCode.SUCCESS
     except Exception as ex:
         logger.error("Could not read metadata: {}.", ex)
+
+        return ExitCode.FAILURE
+
+
+def convert_to_voc(args):
+    """
+    Converts a collated DICOM database into a Pascal VOC dataset, annotating
+    each entry and processing each image as appropriate.
+
+    :param args: The user-chosen options to use.
+    :return: An exit code (0 if success, otherwise 1).
+    """
+    logger = logging.getLogger(__name__)
+
+    try:
+        logger.info("Creating VOC directory structure in: {}.", args.directory)
+        create_directory_structure(args.directory)
+
+        db = read_database(args.DATABASE)
+        converter = partial(convert_entry_to_voc, db=db,
+                            annotation_path=os.path.join(args.directory,
+                                                        "Annotations"),
+                            image_path=os.path.join(args.directory,
+                                                   "JPEGImages"))
+
+        with Pool(processes=args.parallel) as pool:
+            pool.map(converter, range(len(db)))
+
+            logger.info("Converted {} entries to Pascal VOC format.", len(db))
+    except Exception as ex:
+        logger.error("Could not create VOC dataset: {}.", ex)
 
         return ExitCode.FAILURE
