@@ -2,10 +2,30 @@
 Represents a collection of functions to assist with loading image data from
 a collated DICOM database.
 """
+from pandas import np
 from pydicom import Dataset, dcmread
 from pydicom.pixel_data_handlers.util import apply_modality_lut, apply_voi_lut
 
 from breakdb.tag import has_tag, WindowingTag
+
+
+def transform_coords(coords, width, height, new_width, new_height):
+    """
+
+    :param coords:
+    :param width:
+    :param height:
+    :param new_width:
+    :param new_height:
+    :return:
+    """
+    x = coords[0::2]
+    y = coords[1::2]
+
+    x_t = x * (new_width / width)
+    y_t = y * (new_height / height)
+
+    return np.insert(y_t, np.arange(len(x_t)), x_t)
 
 
 def read_image_from_database(index, db, coerce_to_original_data_type=False,
