@@ -2,7 +2,7 @@
 Represents a collection of functions to assist with loading image data from
 a collated DICOM database.
 """
-from pandas import np
+import numpy as np
 from pydicom import Dataset, dcmread
 from pydicom.pixel_data_handlers.util import apply_modality_lut, apply_voi_lut
 
@@ -11,13 +11,16 @@ from breakdb.tag import has_tag, WindowingTag
 
 def transform_coords(coords, width, height, new_width, new_height):
     """
+    Transforms the specified collection of coordinates located in an image
+    with the specified width and height to a new image with different
+    dimensions.
 
-    :param coords:
-    :param width:
-    :param height:
-    :param new_width:
-    :param new_height:
-    :return:
+    :param coords: The collection of coordinates to transform.
+    :param width: The current image width.
+    :param height: The current image height.
+    :param new_width: The new image width.
+    :param new_height: The new image height.
+    :return: A collection of transformed coordinates.
     """
     x = coords[0::2]
     y = coords[1::2]
