@@ -6,7 +6,7 @@ from xml.etree.ElementTree import Element, SubElement
 
 import numpy as np
 
-from breakdb.io.voc import create_object
+from breakdb.io.export.voc import create_object
 from tests.helpers.dataset import create_random_string
 from tests.helpers.xml import match
 

@@ -6,7 +6,7 @@ from xml.etree.ElementTree import Element, SubElement
 
 import numpy as np
 
-from breakdb.io.voc import create_bounding_box
+from breakdb.io.export.voc import create_bounding_box
 from tests.helpers.xml import match
 
 
