@@ -1,6 +1,11 @@
 """
 Contains classes and functions pertaining to the creation of YOLOv3 datasets
 from a collated DICOM database.
+
+Please note that there is no standard YOLOv3 data format.  This module
+exports a DICOM database to the format expected for a custom dataset usable
+by the following YOLOv3 implementation:
+    https://github.com/eriklindernoren/PyTorch-YOLOv3
 """
 import numpy as np
 
