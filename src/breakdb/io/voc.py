@@ -6,10 +6,10 @@ import logging
 import os
 from xml.etree.ElementTree import Element, ElementTree
 
+import numpy as np
 from PIL import Image
-from pandas import np
 
-from breakdb.image import read_image_from_database
+from breakdb.io.image import read_image_from_database
 
 
 def create_annotation(file_path, width, height, depth, annotations):
