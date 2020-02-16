@@ -9,26 +9,26 @@ from pydicom.pixel_data_handlers.util import apply_modality_lut, apply_voi_lut
 from breakdb.tag import has_tag, WindowingTag
 
 
-def transform_coords(coords, width, height, new_width, new_height):
+def normalize(arr, coerce_to_uint8=False):
     """
-    Transforms the specified collection of coordinates located in an image
-    with the specified width and height to a new image with different
-    dimensions.
+    Applies a linear normalization to the specified collection of pixels,
+    forcing each to be between 0 and 255 for image serialization.
 
-    :param coords: The collection of coordinates to transform.
-    :param width: The current image width.
-    :param height: The current image height.
-    :param new_width: The new image width.
-    :param new_height: The new image height.
-    :return: A collection of transformed coordinates.
+    :param arr: The collection of pixels to normalize.
+    :param coerce_to_uint8: Whether or not to convert the result to a
+    collection of unsigned integers instead of floating-point numbers.
+    :return: A collection of normalized pixel values.
     """
-    x = coords[0::2]
-    y = coords[1::2]
+    if arr.dtype != np.float:
+        arr = arr.astype(np.float)
 
-    x_t = x * (new_width / width)
-    y_t = y * (new_height / height)
+    if arr.min() != 0.0:
+        arr = arr - arr.min()
 
-    return np.insert(y_t, np.arange(len(x_t)), x_t)
+    if arr.max() != 255.0 and arr.max() != 0.0:
+        arr = (arr / arr.max()) * 255.0
+
+    return arr if not coerce_to_uint8 else arr.astype(np.uint8)
 
 
 def read_image_from_database(index, db, coerce_to_original_data_type=False,
@@ -108,3 +108,25 @@ def read_image_from_database(index, db, coerce_to_original_data_type=False,
             arr = apply_voi_lut(arr, ds)
 
         return arr if not coerce_to_original_data_type else arr.astype(dtype)
+
+
+def transform_coords(coords, width, height, new_width, new_height):
+    """
+    Transforms the specified collection of coordinates located in an image
+    with the specified width and height to a new image with different
+    dimensions.
+
+    :param coords: The collection of coordinates to transform.
+    :param width: The current image width.
+    :param height: The current image height.
+    :param new_width: The new image width.
+    :param new_height: The new image height.
+    :return: A collection of transformed coordinates.
+    """
+    x = coords[0::2]
+    y = coords[1::2]
+
+    x_t = x * (new_width / width)
+    y_t = y * (new_height / height)
+
+    return np.insert(y_t, np.arange(len(x_t)), x_t)
