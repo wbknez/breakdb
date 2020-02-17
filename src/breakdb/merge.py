@@ -185,7 +185,7 @@ def merge_dicom(parsed, skip_broken):
             return {}
         else:
             logger.error("Could not create database entry for: {}.", uid[0])
-            raise
+            raise MergingError(uid[0]) from mt
 
 
 def organize_parsed(parsed):
