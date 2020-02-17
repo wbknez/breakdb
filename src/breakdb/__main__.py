@@ -7,7 +7,7 @@ import sys
 from argparse import ArgumentParser
 
 from breakdb.action import print_tags, create_database, export_database, \
-    convert_to_voc
+    convert_to_voc, convert_to_yolo
 from breakdb.util import initialize_logging, supports_color_output
 
 
@@ -32,20 +32,59 @@ def parse_args():
 
     subparsers = parser.add_subparsers(dest="subparsers", required=True)
 
-    convert = subparsers.add_parser(name="convert",
-                                    description="convert a database to "
-                                                "Pascal VOC format with "
-                                                "associated file structure")
+    convert_voc = subparsers.add_parser(name="convert-to-voc",
+                                        description="convert a database to "
+                                                    "Pascal VOC format with "
+                                                    "associated file structure")
 
-    convert.set_defaults(func=convert_to_voc)
+    convert_voc.set_defaults(func=convert_to_voc)
 
-    convert.add_argument("-d", "--directory", type=str,
-                         help="base directory for Pascal VOC hierarchy",
-                         required=True)
-    convert.add_argument("-p", "--parallel", type=int,
-                         help="number of parallel processes", default=2)
-    convert.add_argument("DATABASE", type=str,
-                         help="path to database to convert")
+    convert_voc.add_argument("-d", "--directory", type=str,
+                             help="base directory for Pascal VOC hierarchy",
+                             required=True)
+    convert_voc.add_argument("-p", "--parallel", type=int,
+                             help="number of parallel processes", default=2)
+    convert_voc.add_argument("--resize-height", type=int,
+                             help="height to resize all images to",
+                             default=None)
+    convert_voc.add_argument("--resize-width", type=int,
+                             help="width to resize all images to",
+                             default=None)
+    convert_voc.add_argument("-s", "--skip-broken", action="store_true",
+                             help="ignore malformed DICOM files",
+                             default=False)
+    convert_voc.add_argument("DATABASE", type=str,
+                             help="path to database to convert")
+
+    convert_voc = subparsers.add_parser(name="convert",
+                                        description="convert a database to "
+                                                    "Pascal VOC format with "
+                                                    "associated file structure")
+
+    convert_yolo = subparsers.add_parser(name="convert-to-yolo",
+                                         description="convert a database to "
+                                                     "YOLOv3 custom format "
+                                                     "with associated file "
+                                                     "structure")
+
+    convert_yolo.set_defaults(func=convert_to_yolo)
+
+    convert_yolo.add_argument("-d", "--directory", type=str,
+                             help="base directory for Pascal VOC hierarchy",
+                             required=True)
+    convert_yolo.add_argument("-p", "--parallel", type=int,
+                             help="number of parallel processes", default=2)
+    convert_yolo.add_argument("--resize-height", type=int,
+                             help="height to resize all images to",
+                             default=None)
+    convert_yolo.add_argument("--resize-width", type=int,
+                             help="width to resize all images to",
+                             default=None)
+    convert_yolo.add_argument("-s", "--skip-broken", action="store_true",
+                             help="ignore malformed DICOM files",
+                             default=False)
+    convert_yolo.add_argument("DATABASE", type=str,
+                             help="path to database to convert")
 
     create = subparsers.add_parser(name="create",
                                    description="create a database from one "

@@ -14,7 +14,9 @@ from pydicom import dcmread
 
 from breakdb.io import filter_files, COLUMN_NAMES, write_database, \
     read_database
-from breakdb.io.voc import create_directory_structure, convert_entry_to_voc
+from breakdb.io.export import yolo, voc
+from breakdb.io.export.voc import convert_entry_to_voc
+from breakdb.io.export.yolo import convert_entry_to_yolo, write_auxiliary_files
 from breakdb.merge import organize_parsed, merge_dicom
 from breakdb.parse import parse_dicom
 from breakdb.util import format_dataset
@@ -156,14 +158,17 @@ def convert_to_voc(args):
 
     try:
         logger.info("Creating VOC directory structure in: {}.", args.directory)
-        create_directory_structure(args.directory)
+        voc.create_directory_structure(args.directory)
 
         db = read_database(args.DATABASE)
         converter = partial(convert_entry_to_voc, db=db,
                             annotation_path=os.path.join(args.directory,
                                                         "Annotations"),
                             image_path=os.path.join(args.directory,
-                                                   "JPEGImages"))
+                                                   "JPEGImages"),
+                            resize_width=args.resize_width,
+                            resize_height=args.resize_height,
+                            skip_broken=args.skip_broken)
 
         with Pool(processes=args.parallel) as pool:
             pool.map(converter, range(len(db)))
@@ -171,5 +176,42 @@ def convert_to_voc(args):
             logger.info("Converted {} entries to Pascal VOC format.", len(db))
     except Exception as ex:
         logger.error("Could not create VOC dataset: {}.", ex)
+
+        return ExitCode.FAILURE
+
+
+def convert_to_yolo(args):
+    """
+    Converts a collated DICOM database into a YOLOv3 custom dataset, annotating
+    each entry and processing each image as appropriate.
+
+    :param args: The user-chosen options to use.
+    :return: An exit code (0 if success, otherwise 1).
+    """
+    logger = logging.getLogger(__name__)
+
+    try:
+        logger.info("Creating yolo directory structure in: {}.", args.directory)
+        yolo.create_directory_structure(args.directory)
+
+        db = read_database(args.DATABASE)
+        converter = partial(convert_entry_to_yolo, db=db,
+                            annotation_path=os.path.join(args.directory,
+                                                         "labels"),
+                            image_path=os.path.join(args.directory,
+                                                    "images"),
+                            resize_width=args.resize_width,
+                            resize_height=args.resize_height,
+                            skip_broken=args.skip_broken)
+
+        with Pool(processes=args.parallel) as pool:
+            pool.map(converter, range(len(db)))
+
+            logger.debug("Writing auxiliary file(s).")
+            write_auxiliary_files(args.directory, ["negative", "positive"])
+
+            logger.info("Converted {} entries to Pascal yolo format.", len(db))
+    except Exception as ex:
+        logger.error("Could not create yolo dataset: {}.", ex)
 
         return ExitCode.FAILURE
