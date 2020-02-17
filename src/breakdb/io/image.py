@@ -5,6 +5,7 @@ a collated DICOM database.
 from enum import Enum
 
 import numpy as np
+from PIL import Image
 from pydicom import Dataset, dcmread
 from pydicom.pixel_data_handlers.util import apply_modality_lut, apply_voi_lut
 
@@ -49,6 +50,36 @@ class UnknownImageFormat(Exception):
         super().__init__(
             f"Could not find matching PIL image mode for: {interp}."
         )
+
+
+def format_as(attrs, arr, resize_width=None, resize_height=None):
+    """
+    Formats the specified image data array as a Pillow image and resizes it
+    to the specified dimensions as necessary.
+
+    :param attrs: The current image attributes.
+    :param arr: The array of image data.
+    :param resize_width: The width to resize the image to (optional).
+    :param resize_height: The height to resize the image to (optional).
+    :return: A pillow formatted image.
+    """
+    arr = normalize(arr)
+
+    if arr.dtype != np.uint8:
+        arr = arr.astype(np.uint8)
+
+    image = Image.fromarray(arr, mode=attrs[2])
+
+    if resize_width or resize_height:
+        if not resize_width:
+            resize_width = attrs[0]
+
+        if not resize_height:
+            resize_height = attrs[1]
+
+        image = image.resize((resize_width, resize_height), Image.BICUBIC)
+
+    return image
 
 
 def get_mode(ds):
@@ -134,9 +165,9 @@ def read_from_database(index, db, coerce_to_original_data_type=False,
     """
     file_path = db["File Path"][index]
     ds = Dataset()
-    attrs = (ds.Columns.value, ds.Rows.value, get_mode(ds))
 
     with dcmread(file_path) as meta:
+        attrs = (meta.Columns, meta.Rows, get_mode(meta))
         arr = meta.pixel_array
         dtype = arr.dtype
 
