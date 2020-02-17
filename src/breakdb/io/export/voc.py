@@ -6,7 +6,8 @@ import logging
 import os
 from xml.etree.ElementTree import Element, ElementTree
 
-from breakdb.io.image import read_from_database, format_as
+from breakdb.io.image import read_from_database, format_as, \
+    transform_coordinate_collection
 
 
 class VOCEntryFormatError(Exception):
@@ -154,8 +155,13 @@ def convert_entry_to_voc(index, db, annotation_path, image_path,
     logger = logging.getLogger(__name__)
 
     try:
-        base_name = f"{index:0{len(str(len(db)))}}"
         ds = db.iloc[index, :]
+
+        coords = ds["Annotation"]
+        width = ds["Width"]
+        height = ds["Height"]
+
+        base_name = f"{index:0{len(str(len(db)))}}"
         image_path = os.path.join(image_path, base_name) + ".jpg"
         xml_path = os.path.join(annotation_path, base_name) + ".xml"
 
@@ -171,9 +177,17 @@ def convert_entry_to_voc(index, db, annotation_path, image_path,
         print("Wrote: {} successfully.", image_path)
 
         logger.debug("Creating VOC annotation for row: {}.", index)
+
+        if resize_width or resize_height:
+            logger.debug("Scaling annotation coordinates to new image size: "
+                         "{}x{} -> {}x{}.", width, height, image.width,
+                         image.height)
+            coords = transform_coordinate_collection(coords, width,
+                                                     height, image.width,
+                                                     image.height)
+
         xml = create_annotation(xml_path, image.width, image.height,
-                                1 if image.mode == "L" else 3,
-                                ds["Annotation"])
+                                1 if image.mode == "L" else 3, coords)
 
         logger.debug("Saving VOC annotation for row: {} to: {}.", index,
                      xml_path)

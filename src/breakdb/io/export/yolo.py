@@ -12,7 +12,8 @@ import os
 
 import numpy as np
 
-from breakdb.io.image import read_from_database, format_as
+from breakdb.io.image import read_from_database, format_as, \
+    transform_coordinate_collection
 
 
 class YOLOEntryFormatError(Exception):
@@ -28,6 +29,9 @@ class YOLOEntryFormatError(Exception):
 
 def create_annotation(classification, coords, width, height):
     """
+    Creates a single YOLOv3 compatible text annotation with the specified
+    classification and collection of coordinates, each of which is scaled to
+    the specifiied width and height.
 
     :param classification: The classification, or label, of an annotated image.
     :param coords: The DICOM annotation as a list of single coordinates.
@@ -41,7 +45,9 @@ def create_annotation(classification, coords, width, height):
 
 def create_annotations(classification, annotations, width, height):
     """
-
+    Creates a collection of YOLOv3 compatible text annotations for the
+    specified annotation collection, each with the specified classification
+    and scaled to the specified width and height.
 
     :param classification: The classification, or label, of an annotated image.
     :param annotations: A collection of annotations from an image.
@@ -113,8 +119,14 @@ def convert_entry_to_yolo(index, db, annotation_path, image_path,
     logger = logging.getLogger(__name__)
 
     try:
-        base_name = f"{index:0{len(str(len(db)))}}"
         ds = db.iloc[index, :]
+
+        annotations = ds["Annotation"]
+        classification = int(ds["Classification"])
+        width = ds["Width"]
+        height = ds["Height"]
+
+        base_name = f"{index:0{len(str(len(db)))}}"
         image_path = os.path.join(image_path, base_name) + ".jpg"
         label_path = os.path.join(annotation_path, base_name) + ".txt"
 
@@ -131,9 +143,17 @@ def convert_entry_to_yolo(index, db, annotation_path, image_path,
         print("Wrote: {} successfully.", image_path)
 
         logger.debug("Creating YOLO annotation for row: {}.", index)
-        txts = create_annotations(int(ds["Classification"]),
-                                  ds["Annotation"], image.width,
-                                      image.height)
+
+        if resize_width or resize_height:
+            logger.debug("Scaling annotation coordinates to new image size: "
+                         "{}x{} -> {}x{}.", width, height, image.width,
+                         image.height)
+            annotations = transform_coordinate_collection(annotations,
+                                                          width, height,
+                                                          image.width,
+                                                          image.height)
+
+        txts = create_annotations(classification, annotations, width, height)
 
         logger.debug("Saving YOLO annotation for row: {} to: {}.", index,
                      label_path)
