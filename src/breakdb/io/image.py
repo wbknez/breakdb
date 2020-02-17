@@ -205,15 +205,27 @@ def read_from_database(index, db, coerce_to_original_data_type=False,
         return attrs, arr
 
 
-def resize(arr, new_width, new_height):
+def transform_coordinate_collection(coord_list, width, height, new_width,
+                                    new_height):
     """
+    Transforms the specified collection of coordinate collections located in an
+    image with the specified width and height to a new image with different
+    dimensions.
 
-    :param arr:
-    :param new_width: The new image width to use.
-    :param new_height: The new image height to use.
-    :return:
+    :param coord_list: The collection of coordinate collections to transform.
+    :param width: The current image width.
+    :param height: The current image height.
+    :param new_width: The new image width.
+    :param new_height: The new image height.
+    :return: A collection of transformed coordinate collections.
     """
-    pass
+    if (width == new_width) and (height == new_height):
+        return coord_list
+
+    return [
+        transform_coords(coords, width, height, new_width, new_height)
+        for coords in coord_list
+    ]
 
 
 def transform_coords(coords, width, height, new_width, new_height):
@@ -229,8 +241,8 @@ def transform_coords(coords, width, height, new_width, new_height):
     :param new_height: The new image height.
     :return: A collection of transformed coordinates.
     """
-    x = coords[0::2]
-    y = coords[1::2]
+    x = np.array(coords[0::2], np.float)
+    y = np.array(coords[1::2], np.float)
 
     x_t = x * (new_width / width)
     y_t = y * (new_height / height)
