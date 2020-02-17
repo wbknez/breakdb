@@ -2,11 +2,70 @@
 Represents a collection of functions to assist with loading image data from
 a collated DICOM database.
 """
+from enum import Enum
+
 import numpy as np
 from pydicom import Dataset, dcmread
 from pydicom.pixel_data_handlers.util import apply_modality_lut, apply_voi_lut
 
 from breakdb.tag import has_tag, WindowingTag
+
+
+class ImageMode(Enum):
+    """
+    Represents the different types of images supported by this project.
+    """
+
+    MONOCHROME1 = "L"
+    """
+    Represents a grayscale image where zero is black.    
+    """
+
+    MONOCHROME2 = "L"
+    """
+    Represents a grayscale image where zero is one.    
+    """
+
+    RGB = "RGB"
+    """
+    Represents a color image where each pixel consists of a red, green, 
+    and blue color.    
+    """
+
+    YBR_FULL = "YCbCr"
+    """
+    Represents a color image where each pixel consists of a single luminosity 
+    and two chrominance values.
+    """
+
+
+class UnknownImageFormat(Exception):
+    """
+    Represents an exception that is raised whenever a matching PIL image
+    mode cannot be found for a specified DICOM photometric interpretation.
+    """
+
+    def __init__(self, interp):
+        super().__init__(
+            f"Could not find matching PIL image mode for: {interp}."
+        )
+
+
+def get_mode(ds):
+    """
+    Returns the PIL compatible image mode associated with the photometric
+    interpretation contained in the specified dataset.
+
+    :param ds: The dataset to search.
+    :return: A PIL image mode.
+    :raises UnknownImageFormat:
+    """
+    interp = ds.PhotometricInterpretation
+
+    try:
+        return ImageMode[interp].value
+    except KeyError as ke:
+        raise UnknownImageFormat(interp) from ke
 
 
 def normalize(arr, coerce_to_uint8=False):
@@ -31,10 +90,10 @@ def normalize(arr, coerce_to_uint8=False):
     return arr if not coerce_to_uint8 else arr.astype(np.uint8)
 
 
-def read_image_from_database(index, db, coerce_to_original_data_type=False,
-                             ignore_scaling=False, ignore_windowing=False,
-                             slope=None, intercept=None, center=None,
-                             width=None, voi_func=None):
+def read_from_database(index, db, coerce_to_original_data_type=False,
+                       ignore_scaling=False, ignore_windowing=False,
+                       slope=None, intercept=None, center=None,
+                       width=None, voi_func=None):
     """
     Attempts to read the (raw) image data from the DICOM file associated
     with the specified index in the specified DICOM database and apply any
@@ -70,10 +129,12 @@ def read_image_from_database(index, db, coerce_to_original_data_type=False,
     :param width: The scaling window width to use (optional).
     :param voi_func: The VOI LUT function to use.  This may be one of:
     "Linear", "Linear_Exact", or "Sigmoid".
-    :return: An array of image data.
+    :return: A pair containing basic image attributes as a tuple and an
+    array of image pixel data.
     """
     file_path = db["File Path"][index]
     ds = Dataset()
+    attrs = (ds.Columns.value, ds.Rows.value, get_mode(ds))
 
     with dcmread(file_path) as meta:
         arr = meta.pixel_array
@@ -107,7 +168,21 @@ def read_image_from_database(index, db, coerce_to_original_data_type=False,
 
             arr = apply_voi_lut(arr, ds)
 
-        return arr if not coerce_to_original_data_type else arr.astype(dtype)
+        if coerce_to_original_data_type and arr.dtype != dtype:
+            arr = arr.astype(dtype)
+
+        return attrs, arr
+
+
+def resize(arr, new_width, new_height):
+    """
+
+    :param arr:
+    :param new_width: The new image width to use.
+    :param new_height: The new image height to use.
+    :return:
+    """
+    pass
 
 
 def transform_coords(coords, width, height, new_width, new_height):
