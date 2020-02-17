@@ -6,10 +6,7 @@ import logging
 import os
 from xml.etree.ElementTree import Element, ElementTree
 
-import numpy as np
-from PIL import Image
-
-from breakdb.io.image import read_image_from_database
+from breakdb.io.image import read_from_database, format_as
 
 
 def create_annotation(file_path, width, height, depth, annotations):
@@ -23,7 +20,7 @@ def create_annotation(file_path, width, height, depth, annotations):
     :param height: The height of an annotated image.
     :param depth: The depth of an annotated image.
     :param annotations: The collection of annotations (optional).
-    :return:
+    :return: A Pascal VOC annotation.
     """
     xml = create_element("annotation", children=[
         create_element("folder",
@@ -127,7 +124,8 @@ def create_object(name, coords):
     ])
 
 
-def convert_entry_to_voc(index, db, annotation_path, image_path):
+def convert_entry_to_voc(index, db, annotation_path, image_path,
+                         resize_width=None, resize_height=None):
     """
     Converts a single entry with the specified index in the specified
     database to a Pascal VOC compatible annotation with associated image
@@ -137,27 +135,22 @@ def convert_entry_to_voc(index, db, annotation_path, image_path):
     :param db: The database to search.
     :param annotation_path: The Pascal VOC annotation storage path.
     :param image_path: The Pascal VOC image storage path.
+    :param resize_width: The width to resize the image to (optional).
+    :param resize_height: The height to resize the image to (optional).
     """
     logger = logging.getLogger(__name__)
 
     base_name = f"{index:0{len(str(len(db)))}}"
     ds = db.iloc[index, :]
-    image_path = os.path.join(image_path, base_name) + ".png"
+    image_path = os.path.join(image_path, base_name) + ".jpg"
     xml_path = os.path.join(annotation_path, base_name) + ".xml"
 
     logger.info("Exporting row: {} using base name: {}.", index, base_name)
 
     logger.debug("Loading image for row: {} with file name: {}.", index,
                  ds["File Path"])
-    arr = read_image_from_database(index, db,
-                                   coerce_to_original_data_type=True)
-
-    # FIXME: Implement correct image manipulation.
-    arr = arr + arr.min()
-    arr = arr / arr.max()
-    arr = arr.astype(np.int32)
-
-    image = Image.fromarray(arr)
+    attrs, arr = read_from_database(index, db, ignore_windowing=True)
+    image = format_as(attrs, arr, resize_width, resize_height)
 
     logger.debug("Creating VOC annotation for row: {}.", index)
     xml = create_annotation(xml_path, image.width, image.height,
