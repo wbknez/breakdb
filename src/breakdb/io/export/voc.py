@@ -9,6 +9,17 @@ from xml.etree.ElementTree import Element, ElementTree
 from breakdb.io.image import read_from_database, format_as
 
 
+class VOCEntryFormatError(Exception):
+    """
+    Represents an exception that is raised when an error is encountered
+    while attempting to format a DICOM database entry as a Pascal VOC dataset.
+    """
+
+    def __init__(self, index, file_path):
+        super().__init__(f"Could not format row {index} as a Pascal VOC entry "
+                         f"with image: {file_path}.")
+
+
 def create_annotation(file_path, width, height, depth, annotations):
     """
     Creates a Pascal VOC compatible XML annotation for the specified file
@@ -125,7 +136,8 @@ def create_object(name, coords):
 
 
 def convert_entry_to_voc(index, db, annotation_path, image_path,
-                         resize_width=None, resize_height=None):
+                         resize_width=None, resize_height=None,
+                         skip_broken=False):
     """
     Converts a single entry with the specified index in the specified
     database to a Pascal VOC compatible annotation with associated image
@@ -137,34 +149,39 @@ def convert_entry_to_voc(index, db, annotation_path, image_path,
     :param image_path: The Pascal VOC image storage path.
     :param resize_width: The width to resize the image to (optional).
     :param resize_height: The height to resize the image to (optional).
+    :param skip_broken: Whether or not to ignore malformed datasets.
     """
     logger = logging.getLogger(__name__)
 
-    base_name = f"{index:0{len(str(len(db)))}}"
-    ds = db.iloc[index, :]
-    image_path = os.path.join(image_path, base_name) + ".jpg"
-    xml_path = os.path.join(annotation_path, base_name) + ".xml"
-
-    logger.info("Exporting row: {} using base name: {}.", index, base_name)
-
-    logger.debug("Loading image for row: {} with file name: {}.", index,
-                 ds["File Path"])
-    attrs, arr = read_from_database(index, db, ignore_windowing=True)
-    image = format_as(attrs, arr, resize_width, resize_height)
-
-    logger.debug("Creating VOC annotation for row: {}.", index)
-    xml = create_annotation(xml_path, image.width, image.height,
-                            1 if image.mode == "L" else 3, ds["Annotation"])
-
-    logger.debug("Saving image for row: {} to: {}.", index, image_path)
     try:
+        base_name = f"{index:0{len(str(len(db)))}}"
+        ds = db.iloc[index, :]
+        image_path = os.path.join(image_path, base_name) + ".jpg"
+        xml_path = os.path.join(annotation_path, base_name) + ".xml"
+
+        logger.info("Exporting row: {} using base name: {}.", index, base_name)
+
+        logger.debug("Loading image for row: {} with file name: {}.", index,
+                     ds["File Path"])
+        attrs, arr = read_from_database(index, db, ignore_windowing=True)
+        image = format_as(attrs, arr, resize_width, resize_height)
+
+        logger.debug("Saving image for row: {} to: {}.", index, image_path)
         image.save(image_path)
         print("Wrote: {} successfully.", image_path)
+
+        logger.debug("Creating VOC annotation for row: {}.", index)
+        xml = create_annotation(xml_path, image.width, image.height,
+                                1 if image.mode == "L" else 3,
+                                ds["Annotation"])
+
+        logger.debug("Saving VOC annotation for row: {} to: {}.", index,
+                     xml_path)
+        ElementTree(xml).write(xml_path)
     except Exception as ex:
-        print("Could not write: " + image_path)
-        print(ex)
-
-    logger.debug("Saving VOC annotation for row: {} to: {}.", index, xml_path)
-    ElementTree(xml).write(xml_path)
-
-
+        if skip_broken:
+            logger.warning("Could not create Pascal VOC entry for index: {}.",
+                           index)
+            logger.warning("  Reason: {}.", ex)
+        else:
+            raise VOCEntryFormatError(index, db["File Path"][index]) from ex
