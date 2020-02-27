@@ -62,7 +62,7 @@ def compute_resize_ratio(width, height, target_width, target_height,
 
     :param width: The current image width.
     :param height: The current image height.
-    :param target_width: The taret image width.
+    :param target_width: The target image width.
     :param target_height: The target image height.
     :param no_upscale: Whether or not to disallow upscaling (i.e. results
     greater than one).
@@ -73,31 +73,35 @@ def compute_resize_ratio(width, height, target_width, target_height,
     return np.min([max_scale, target_width / width, target_height / height])
 
 
-def compute_image_dimensions(width, height, rescale_width, rescale_height,
-                             keep_aspect_ratio, no_upscale):
+def compute_target_dimensions(width, height, target_width, target_height,
+                              preserve_aspect_ratio, no_upscale):
     """
 
     :param width:
     :param height:
-    :param rescale_width:
-    :param rescale_height:
-    :param keep_aspect_ratio:
+    :param target_width:
+    :param target_height:
+    :param preserve_aspect_ratio:
     :param no_upscale:
     :return:
     """
-    if not rescale_height:
-        rescale_height = height
+    if not target_width:
+        target_width = width
 
-    if not rescale_width:
-        rescale_width = width
+    if not target_height:
+        target_height = height
 
-    target_width = rescale_width
-    target_height = rescale_height
+    resize_width = target_width
+    resize_height = target_height
 
-    if keep_aspect_ratio:
-        pass
+    if preserve_aspect_ratio:
+        ratio = compute_resize_ratio(width, height, target_width,
+                                     target_height, no_upscale)
 
-    return None
+        rescale_width = np.min([np.floor(ratio * resize_width), resize_width])
+        rescale_height = np.min([np.floor(ratio * resize_height),
+                                 resize_height])
+
 
 
 def format_as(attrs, arr, resize_width=None, resize_height=None,
