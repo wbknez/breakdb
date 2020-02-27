@@ -73,17 +73,22 @@ def compute_resize_ratio(width, height, target_width, target_height,
     return np.min([max_scale, target_width / width, target_height / height])
 
 
-def compute_target_dimensions(width, height, target_width, target_height,
+def compute_resize_dimensions(width, height, target_width, target_height,
                               preserve_aspect_ratio, no_upscale):
     """
+    Computes the dimensions that should be used to resize an image with the
+    specified width and height to the specified dimensions depending on
+    whether or not the aspect ratio should be preserved and up-scaling is
+    allowed.
 
-    :param width:
-    :param height:
-    :param target_width:
-    :param target_height:
-    :param preserve_aspect_ratio:
-    :param no_upscale:
-    :return:
+    :param width: The current image width.
+    :param height: The current image height.
+    :param target_width: The target image width.
+    :param target_height: The target image height.
+    :param preserve_aspect_ratio: Whether or not to preserve the aspect
+    ratio during resizing.
+    :param no_upscale: Whether or not to disallow dimension upscaling.
+    :return: The width and height to resize an image.
     """
     if not target_width:
         target_width = width
@@ -98,9 +103,15 @@ def compute_target_dimensions(width, height, target_width, target_height,
         ratio = compute_resize_ratio(width, height, target_width,
                                      target_height, no_upscale)
 
-        rescale_width = np.min([np.floor(ratio * resize_width), resize_width])
-        rescale_height = np.min([np.floor(ratio * resize_height),
-                                 resize_height])
+        resize_width = np.min([np.floor(ratio * width), target_width])
+        resize_height = np.min([np.floor(ratio * height), target_height])
+    else:
+        if no_upscale and (target_width > width):
+            resize_width = width
+        if no_upscale and (target_height > height):
+            resize_height = height
+
+    return resize_width, resize_height
 
 
 
