@@ -53,6 +53,30 @@ class UnknownImageFormat(Exception):
         )
 
 
+def compute_resize_transform(width, height, target_width, target_height,
+                             resize_width, resize_height):
+    """
+    Computes the origin and the scaling coefficients necessary to convert a
+    pair of coordinates from an image with the specified width and height to another with
+    the specified alternate dimensions.
+
+    :param width: The current image width.
+    :param height: The current image height.
+    :param target_width: The target image width.
+    :param target_height: The target image height.
+    :param resize_width: The resized original image width.
+    :param resize_height: The resized original image height.
+    :return: The origin (x- and y-axis) and scaling coefficients (width and
+    height) as a pair of tuples.
+    """
+    origin_x = (target_width - resize_width) / 2.0
+    origin_y = (target_height - resize_height) / 2.0
+    width_ratio = resize_width / width
+    height_ratio = resize_height / height
+
+    return (origin_x, origin_y), (width_ratio, height_ratio)
+
+
 def compute_resize_ratio(width, height, target_width, target_height,
                          no_upscale):
     """
@@ -111,7 +135,7 @@ def compute_resize_dimensions(width, height, target_width, target_height,
         if no_upscale and (target_height > height):
             resize_height = height
 
-    return resize_width, resize_height
+    return np.int(resize_width), np.int(resize_height)
 
 
 
