@@ -296,46 +296,41 @@ def read_from_database(index, db, coerce_to_original_data_type=False,
         return attrs, arr
 
 
-def transform_coordinate_collection(coord_list, width, height, new_width,
-                                    new_height):
+def transform_coordinate_collection(coord_list, origin, ratios):
     """
     Transforms the specified collection of coordinate collections located in an
     image with the specified width and height to a new image with different
     dimensions.
 
     :param coord_list: The collection of coordinate collections to transform.
-    :param width: The current image width.
-    :param height: The current image height.
-    :param new_width: The new image width.
-    :param new_height: The new image height.
+    :param origin:
+    :param ratios:
     :return: A collection of transformed coordinate collections.
     """
-    if (width == new_width) and (height == new_height):
+    if (origin == (0.0, 0.0)) and (ratios == (1.0, 1.0)):
         return coord_list
 
     return [
-        transform_coords(coords, width, height, new_width, new_height)
+        transform_coords(coords, origin, ratios)
         for coords in coord_list
     ]
 
 
-def transform_coords(coords, width, height, new_width, new_height):
+def transform_coords(coords, origin, ratios):
     """
     Transforms the specified collection of coordinates located in an image
     with the specified width and height to a new image with different
     dimensions.
 
     :param coords: The collection of coordinates to transform.
-    :param width: The current image width.
-    :param height: The current image height.
-    :param new_width: The new image width.
-    :param new_height: The new image height.
+    :param origin:
+    :param ratios:
     :return: A collection of transformed coordinates.
     """
     x = np.array(coords[0::2], np.float)
     y = np.array(coords[1::2], np.float)
 
-    x_t = x * (new_width / width)
-    y_t = y * (new_height / height)
+    x_t = x * ratios[0] + origin[0]
+    y_t = y * ratios[1] + origin[1]
 
     return np.insert(y_t, np.arange(len(x_t)), x_t)
