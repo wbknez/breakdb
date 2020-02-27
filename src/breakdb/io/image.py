@@ -2,6 +2,7 @@
 Represents a collection of functions to assist with loading image data from
 a collated DICOM database.
 """
+import sys
 from enum import Enum
 
 import numpy as np
@@ -52,7 +53,55 @@ class UnknownImageFormat(Exception):
         )
 
 
-def format_as(attrs, arr, resize_width=None, resize_height=None):
+def compute_resize_ratio(width, height, target_width, target_height,
+                         no_upscale):
+    """
+    Computes the proportional amount that would allow an image with the
+    specified width and height to maintain the same aspect ratio when scaled to
+    the specified alternate dimensions.
+
+    :param width: The current image width.
+    :param height: The current image height.
+    :param target_width: The taret image width.
+    :param target_height: The target image height.
+    :param no_upscale: Whether or not to disallow upscaling (i.e. results
+    greater than one).
+    :return: A proportional scalar for image resizing.
+    """
+    max_scale = 1.0 if no_upscale else sys.maxsize * 1.0
+
+    return np.min([max_scale, target_width / width, target_height / height])
+
+
+def compute_image_dimensions(width, height, rescale_width, rescale_height,
+                             keep_aspect_ratio, no_upscale):
+    """
+
+    :param width:
+    :param height:
+    :param rescale_width:
+    :param rescale_height:
+    :param keep_aspect_ratio:
+    :param no_upscale:
+    :return:
+    """
+    if not rescale_height:
+        rescale_height = height
+
+    if not rescale_width:
+        rescale_width = width
+
+    target_width = rescale_width
+    target_height = rescale_height
+
+    if keep_aspect_ratio:
+        pass
+
+    return None
+
+
+def format_as(attrs, arr, resize_width=None, resize_height=None,
+              keep_aspect_ratio=True, no_upscale=False):
     """
     Formats the specified image data array as a Pillow image and resizes it
     to the specified dimensions as necessary.
@@ -61,6 +110,9 @@ def format_as(attrs, arr, resize_width=None, resize_height=None):
     :param arr: The array of image data.
     :param resize_width: The width to resize the image to (optional).
     :param resize_height: The height to resize the image to (optional).
+    :param keep_aspect_ratio: Whether or not to ensure the aspect ratio
+    stays the same during (any) resize operations.
+    :param no_upscale: Whether or not to forbid upscaling.
     :return: A pillow formatted image.
     """
     arr = normalize(arr)
