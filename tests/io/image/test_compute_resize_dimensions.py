@@ -105,7 +105,7 @@ class TestComputeResizeDimensions:
         target_width = (width + 1) * 2
 
         resize = compute_resize_dimensions(width, width, target_width,
-                                           target_width, True, False)
+                                           target_width, False, True)
 
-        assert resize[0] == target_width
-        assert resize[1] == target_width
+        assert resize[0] == width
+        assert resize[1] == width
