@@ -10,7 +10,34 @@ from pydicom.errors import InvalidDicomError
 from breakdb.tag import CommonTag, ReferenceTag, AnnotationTag, get_tag, \
     get_tag_at, make_tag_dict, has_tag, get_sequence, has_sequence, PixelTag, \
     ScalingTag, MissingTag, MalformedSequence, MissingSequence, replace_tag, \
-    MiscTag, check_tag, check_sequence_length, WindowingTag
+    MiscTag, check_tag, check_sequence_length, WindowingTag, make_tag_list
+
+ALL_TAGS = make_tag_list(
+    CommonTag.SOP_CLASS,
+    CommonTag.SOP_INSTANCE,
+    CommonTag.SERIES,
+    CommonTag.STUDY,
+    MiscTag.BODY_PART,
+    PixelTag.BITS_ALLOCATED,
+    PixelTag.BITS_STORED,
+    PixelTag.COLUMNS,
+    PixelTag.DATA,
+    PixelTag.PHOTOMETRIC_INTERPRETATION,
+    PixelTag.REPRESENTATION,
+    PixelTag.ROWS,
+    PixelTag.SAMPLES_PER_PIXEL,
+    ReferenceTag.SEQUENCE,
+    ReferenceTag.OBJECT,
+    ReferenceTag.SOP_CLASS,
+    ReferenceTag.SOP_INSTANCE,
+    ReferenceTag.SERIES,
+    ScalingTag.INTERCEPT,
+    ScalingTag.SLOPE,
+    ScalingTag.TYPE,
+    WindowingTag.CENTER,
+    WindowingTag.FUNCTION,
+    WindowingTag.WIDTH
+)
 
 
 class ParsingError(Exception):
@@ -323,7 +350,7 @@ def parse_dicom(file_path, skip_broken):
     try:
         logger.debug("Parsing: {}.", file_path)
 
-        with dcmread(file_path) as ds:
+        with dcmread(file_path, defer_size=64, specific_tags=ALL_TAGS) as ds:
             parsed = parse_dataset(ds)
 
             if has_tag(parsed, PixelTag.COLUMNS) and \
