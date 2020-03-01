@@ -415,6 +415,16 @@ def make_tag_dict(*values):
     return {value.tag: value.value for value in values}
 
 
+def make_tag_list(*values):
+    """
+    Converts the specified collection of tag values into a list.
+
+    :param values: The collection of tag values to use.
+    :return: A list of tag values.
+    """
+    return [value.value for value in values]
+
+
 def replace_tag(src, src_tag, dest_tag=None):
     """
     Creates a new, small dictionary of tag values for use in overwriting
