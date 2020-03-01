@@ -10,7 +10,26 @@ from PIL import Image
 from pydicom import Dataset, dcmread
 from pydicom.pixel_data_handlers.util import apply_modality_lut, apply_voi_lut
 
-from breakdb.tag import has_tag, WindowingTag
+from breakdb.tag import has_tag, WindowingTag, make_tag_list, PixelTag, \
+    ScalingTag
+
+
+IMAGE_TAGS = make_tag_list(
+    PixelTag.BITS_ALLOCATED,
+    PixelTag.BITS_STORED,
+    PixelTag.COLUMNS,
+    PixelTag.DATA,
+    PixelTag.PHOTOMETRIC_INTERPRETATION,
+    PixelTag.REPRESENTATION,
+    PixelTag.ROWS,
+    PixelTag.SAMPLES_PER_PIXEL,
+    ScalingTag.INTERCEPT,
+    ScalingTag.SLOPE,
+    ScalingTag.TYPE,
+    WindowingTag.CENTER,
+    WindowingTag.FUNCTION,
+    WindowingTag.WIDTH
+)
 
 
 class ImageMode(Enum):
@@ -257,7 +276,7 @@ def read_from_database(index, db, coerce_to_original_data_type=False,
     file_path = db["File Path"][index]
     ds = Dataset()
 
-    with dcmread(file_path) as meta:
+    with dcmread(file_path, specific_tags=IMAGE_TAGS) as meta:
         attrs = (meta.Columns, meta.Rows, get_mode(meta))
         arr = meta.pixel_array
         dtype = arr.dtype
