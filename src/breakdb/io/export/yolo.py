@@ -12,7 +12,8 @@ import os
 
 import numpy as np
 
-from breakdb.io.image import read_from_database, format_as, \
+from breakdb.io.export import AnnotationExporter
+from breakdb.io.image import read_from_dataset, format_as, \
     transform_coordinate_collection
 
 
@@ -25,6 +26,32 @@ class YOLOEntryFormatError(Exception):
     def __init__(self, index, file_path):
         super().__init__(f"Could not format row {index} as a YOLO entry with "
                          f"image: {file_path}.")
+
+
+class YOLOAnnotationExporter(AnnotationExporter):
+    """
+
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def create_bounding_box(self, coords, width, height):
+        x = np.array([value for value in coords[0::2]], dtype=np.float)
+        y = np.array([value for value in coords[1::2]], dtype=np.float)
+
+        x_max = np.max(x)
+        x_min = np.min(x)
+
+        y_max = np.max(y)
+        y_min = np.min(y)
+
+        return [
+            (x_max + x_min) / (2.0 * width),
+            (y_max + y_min) / (2.0 * height),
+            (x_max - x_min) / width,
+            (y_max - y_min) / height
+        ]
 
 
 def create_annotation(classification, coords, width, height):
@@ -135,7 +162,7 @@ def convert_entry_to_yolo(index, db, annotation_path, image_path,
         logger.debug("Loading image for row: {} with file name: {}.", index,
                      ds["File Path"])
 
-        attrs, arr = read_from_database(index, db, ignore_windowing=True)
+        attrs, arr = read_from_dataset(index, db, ignore_windowing=True)
         image = format_as(attrs, arr, resize_width, resize_height)
 
         logger.debug("Saving image for row: {} to: {}.", index, image_path)

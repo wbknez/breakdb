@@ -6,7 +6,8 @@ import logging
 import os
 from xml.etree.ElementTree import Element, ElementTree
 
-from breakdb.io.image import read_from_database, format_as, \
+from breakdb.io.export import AnnotationExporter
+from breakdb.io.image import read_from_dataset, format_as, \
     transform_coordinate_collection
 
 
@@ -19,6 +20,23 @@ class VOCEntryFormatError(Exception):
     def __init__(self, index, file_path):
         super().__init__(f"Could not format row {index} as a Pascal VOC entry "
                          f"with image: {file_path}.")
+
+
+class VOCAnnotationExporter(AnnotationExporter):
+    """
+
+    """
+
+    def create_bounding_box(self, coords, width=None, height=None):
+        x = [value for value in coords[0::2]]
+        y = [value for value in coords[1::2]]
+
+        return create_element("bndbox", children=[
+            create_element("xmin", text_value=str(min(x))),
+            create_element("ymin", text_value=str(min(y))),
+            create_element("xmax", text_value=str(max(x))),
+            create_element("ymax", text_value=str(max(y))),
+        ])
 
 
 def create_annotation(file_path, width, height, depth, annotations):
@@ -169,7 +187,7 @@ def convert_entry_to_voc(index, db, annotation_path, image_path,
 
         logger.debug("Loading image for row: {} with file name: {}.", index,
                      ds["File Path"])
-        attrs, arr = read_from_database(index, db, ignore_windowing=True)
+        attrs, arr = read_from_dataset(ds, ignore_windowing=True)
         image = format_as(attrs, arr, resize_width, resize_height)
 
         logger.debug("Saving image for row: {} to: {}.", index, image_path)
