@@ -76,8 +76,8 @@ def compute_resize_transform(width, height, target_width, target_height,
                              resize_width, resize_height):
     """
     Computes the origin and the scaling coefficients necessary to convert a
-    pair of coordinates from an image with the specified width and height to another with
-    the specified alternate dimensions.
+    pair of coordinates from an image with the specified width and height to
+    another with the specified alternate dimensions.
 
     :param width: The current image width.
     :param height: The current image height.
@@ -157,8 +157,7 @@ def compute_resize_dimensions(width, height, target_width, target_height,
     return np.int(resize_width), np.int(resize_height)
 
 
-
-def format_as(attrs, arr, resize_width=None, resize_height=None,
+def format_as(attrs, arr, target_width, target_height,
               keep_aspect_ratio=True, no_upscale=False):
     """
     Formats the specified image data array as a Pillow image and resizes it
@@ -166,30 +165,39 @@ def format_as(attrs, arr, resize_width=None, resize_height=None,
 
     :param attrs: The current image attributes.
     :param arr: The array of image data.
-    :param resize_width: The width to resize the image to (optional).
-    :param resize_height: The height to resize the image to (optional).
+    :param target_width: The maximum width to resize the image to.
+    :param target_height: The maximum height to resize the image to.
     :param keep_aspect_ratio: Whether or not to ensure the aspect ratio
     stays the same during (any) resize operations.
     :param no_upscale: Whether or not to forbid upscaling.
-    :return: A pillow formatted image.
+    :return: A formatted image and computed transform as a pair.
     """
+    width, height, mode = attrs
+
     arr = normalize(arr)
+    resize_width, resize_height = compute_resize_dimensions(
+        attrs[0], attrs[1], target_width, target_height, keep_aspect_ratio,
+        no_upscale
+    )
+    transform = compute_resize_transform(attrs[0], attrs[1], target_width,
+                                         target_height, resize_width,
+                                         resize_height)
 
     if arr.dtype != np.uint8:
         arr = arr.astype(np.uint8)
 
-    image = Image.fromarray(arr, mode=attrs[2])
+    image = Image.fromarray(arr, mode=mode)
 
-    if resize_width or resize_height:
-        if not resize_width:
-            resize_width = attrs[0]
-
-        if not resize_height:
-            resize_height = attrs[1]
-
+    if width != resize_width or height != resize_height:
         image = image.resize((resize_width, resize_height), Image.BICUBIC)
 
-    return image
+    if transform != ((0.0, 0.0), (1.0, 1.0)):
+        scaled = Image.new(mode, (target_width, target_height), 0)
+        scaled.paste(image, transform[0])
+
+        image = scaled
+
+    return image, transform
 
 
 def get_mode(ds):
@@ -231,14 +239,14 @@ def normalize(arr, coerce_to_uint8=False):
     return arr if not coerce_to_uint8 else arr.astype(np.uint8)
 
 
-def read_from_database(index, db, coerce_to_original_data_type=False,
-                       ignore_scaling=False, ignore_windowing=False,
+def read_from_dataset(ds, coerce_to_original_data_type=False,
+                      ignore_scaling=False, ignore_windowing=False,
                        slope=None, intercept=None, center=None,
                        width=None, voi_func=None):
     """
     Attempts to read the (raw) image data from the DICOM file associated
-    with the specified index in the specified DICOM database and apply any
-    and all visual transformations to it.
+    with the specified DICOM dataset and applies any and all visual
+    transformations to it.
 
     By default, all configurable parameters are assumed to be contained in
     the same DICOM dataset that provides the (raw) pixel array.  These
@@ -256,8 +264,7 @@ def read_from_database(index, db, coerce_to_original_data_type=False,
     than that of the original DICOM, an option is provided to coerce the
     result back to the original.
 
-    :param index: The index of the DICOM to use.
-    :param db: The database to search.
+    :param ds: The DICOM dataset to use.
     :param coerce_to_original_data_type: Whether or not to force the final
     pixel array to be of the same type as the original.
     :param ignore_scaling: Whether or not to ignore, or not apply,
@@ -273,41 +280,41 @@ def read_from_database(index, db, coerce_to_original_data_type=False,
     :return: A pair containing basic image attributes as a tuple and an
     array of image pixel data.
     """
-    file_path = db["File Path"][index]
-    ds = Dataset()
+    file_path = ds.FilePath
+    img = Dataset()
 
     with dcmread(file_path, specific_tags=IMAGE_TAGS) as meta:
         attrs = (meta.Columns, meta.Rows, get_mode(meta))
         arr = meta.pixel_array
         dtype = arr.dtype
 
-        if db["Scaling"][index] and not ignore_scaling:
-            ds.RescaleIntercept = meta.RescaleIntercept if not intercept else \
+        if ds.Scaling and not ignore_scaling:
+            img.RescaleIntercept = meta.RescaleIntercept if not intercept else \
                 intercept
-            ds.RescaleSlope = meta.RescaleSlope if not slope else slope
+            img.RescaleSlope = meta.RescaleSlope if not slope else slope
 
-            arr = apply_modality_lut(arr, ds)
+            arr = apply_modality_lut(arr, img)
 
-        if db["Windowing"][index] and not ignore_windowing:
-            ds.BitsAllocated = meta.BitsAllocated
-            ds.BitsStored = meta.BitsStored
-            ds.Columns = meta.Columns
-            ds.PhotometricInterpretation = meta.PhotometricInterpretation
-            ds.PixelRepresentation = meta.PixelRepresentation
-            ds.Rows = meta.Rows
-            ds.SamplesPerPixel = meta.SamplesPerPixel
+        if ds.Windowing and not ignore_windowing:
+            img.BitsAllocated = meta.BitsAllocated
+            img.BitsStored = meta.BitsStored
+            img.Columns = meta.Columns
+            img.PhotometricInterpretation = meta.PhotometricInterpretation
+            img.PixelRepresentation = meta.PixelRepresentation
+            img.Rows = meta.Rows
+            img.SamplesPerPixel = meta.SamplesPerPixel
 
             if voi_func:
-                ds.VOILUTFunction = voi_func.upper()
+                img.VOILUTFunction = voi_func.upper()
             elif has_tag(meta, WindowingTag.FUNCTION):
-                ds.VOILUTFunction = meta.VOILUTFunction
+                img.VOILUTFunction = meta.VOILUTFunction
             else:
-                ds.VOILUTFunction = "LINEAR"
+                img.VOILUTFunction = "LINEAR"
 
-            ds.WindowCenter = meta.WindowCenter if not center else center
-            ds.WindowWidth = meta.WindowWidth if not width else width
+            img.WindowCenter = meta.WindowCenter if not center else center
+            img.WindowWidth = meta.WindowWidth if not width else width
 
-            arr = apply_voi_lut(arr, ds)
+            arr = apply_voi_lut(arr, img)
 
         if coerce_to_original_data_type and arr.dtype != dtype:
             arr = arr.astype(dtype)
