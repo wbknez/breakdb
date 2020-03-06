@@ -12,46 +12,71 @@ import os
 
 import numpy as np
 
-from breakdb.io.export import AnnotationExporter
-from breakdb.io.image import read_from_dataset, format_as, \
-    transform_coordinate_collection
+from breakdb.io.export import DatabaseEntryExporter, make_directory, \
+    export_image, ExportEntryFormatError
+from breakdb.io.image import transform_coordinate_collection
 
 
-class YOLOEntryFormatError(Exception):
+class YOLODatabaseEntryExporter(DatabaseEntryExporter):
     """
-    Represents an exception that is raised when an error is encountered
-    while attempting to format a DICOM database entry as a YOLOv3 dataset.
-    """
-
-    def __init__(self, index, file_path):
-        super().__init__(f"Could not format row {index} as a YOLO entry with "
-                         f"image: {file_path}.")
-
-
-class YOLOAnnotationExporter(AnnotationExporter):
-    """
-
+    Represents a way to export a single entry of a collated DICOM database
+    to the format used by a PyTorch YOLOv3 algorithm.
     """
 
     def __init__(self):
         super().__init__()
 
-    def create_bounding_box(self, coords, width, height):
-        x = np.array([value for value in coords[0::2]], dtype=np.float)
-        y = np.array([value for value in coords[1::2]], dtype=np.float)
+    def create_directory_structure(self, base_dir, force=False):
+        annotation_dir = os.path.join(base_dir, "labels")
+        image_dir = os.path.join(base_dir, "images")
 
-        x_max = np.max(x)
-        x_min = np.min(x)
+        make_directory(base_dir, force)
+        make_directory(annotation_dir, force)
+        make_directory(image_dir, force)
 
-        y_max = np.max(y)
-        y_min = np.min(y)
+        return annotation_dir, image_dir, base_dir
 
-        return [
-            (x_max + x_min) / (2.0 * width),
-            (y_max + y_min) / (2.0 * height),
-            (x_max - x_min) / width,
-            (y_max - y_min) / height
-        ]
+    def export(self, ds, name, base_dir, target_width=None, target_height=None,
+               ignore_scaling=False, ignore_windowing=True,
+               keep_aspect_ratio=True, no_upscale=False, skip_broken=False):
+        logger = logging.getLogger(__name__)
+
+        try:
+            annotation_path = os.path.join(base_dir, "labels", name) + ".txt"
+            image_path = os.path.join(ds.FilePath, "images", name) + ".jpg"
+
+            logger.info("Exporting database entry: {}.", name)
+
+            logger.debug("Exporting image for: {} to: {}.", name, image_path)
+            dims, transform = export_image(ds, image_path, target_width,
+                                           target_height, ignore_scaling,
+                                           ignore_windowing, keep_aspect_ratio,
+                                           no_upscale)
+
+            logger.debug("Exporting annotations for: {} to: {}.", name,
+                         annotation_path)
+
+            ds.Annotation = transform_coordinate_collection(ds.Annotation,
+                                                            transform[0],
+                                                            transform[1])
+            txts = create_annotations(int(ds.Classification), ds.Annotation,
+                                      dims[0], dims[1])
+
+            with open(annotation_path, "w") as f:
+                for txt in txts:
+                    print(txt, file=f)
+
+            write_auxiliary_files(base_dir, ["negative", "positive"])
+
+            return annotation_path, int(ds.Classification)
+        except Exception as ex:
+            if skip_broken:
+                logger.warning("Could not export database entry: {}.", name)
+                logger.warning("  Reason: {}.", ex)
+
+                return ()
+            else:
+                raise ExportEntryFormatError(name, "YOLOv3") from ex
 
 
 def create_annotation(classification, coords, width, height):
@@ -108,93 +133,18 @@ def create_bounding_box(coords, width, height):
     x = np.array([value for value in coords[0::2]], dtype=np.float)
     y = np.array([value for value in coords[1::2]], dtype=np.float)
 
-    x_ratio = (np.max(x) - np.min(x)) / width
-    y_ratio = (np.max(y) - np.min(y)) / height
+    x_max = np.max(x)
+    x_min = np.min(x)
 
-    return [x_ratio / 2.0, y_ratio / 2.0, x_ratio, y_ratio]
+    y_max = np.max(y)
+    y_min = np.min(y)
 
-
-def create_directory_structure(dir_path):
-    """
-    Creates the directory structure expected for a Yolov3 custom dataset.
-
-    :param dir_path: The directory in which to create the directory structure.
-    """
-    if not os.path.exists(dir_path):
-        os.mkdir(dir_path)
-
-    os.mkdir(os.path.join(dir_path, "images"))
-    os.mkdir(os.path.join(dir_path, "labels"))
-
-
-def convert_entry_to_yolo(index, db, annotation_path, image_path,
-                          resize_width=None, resize_height=None,
-                          skip_broken=False):
-    """
-    Converts a single entry with the specified index in the specified
-    database to a YOLOv3 compatible annotation with associated image that is
-    stored in the specified path.
-
-    :param index: The (row) index to use.
-    :param db: The database to search.
-    :param annotation_path: The Pascal VOC annotation storage path.
-    :param image_path: The Pascal VOC image storage path.
-    :param resize_width: The width to resize the image to (optional).
-    :param resize_height: The height to resize the image to (optional).
-    :param skip_broken: Whether or not to ignore malformed datasets.
-    """
-    logger = logging.getLogger(__name__)
-
-    try:
-        ds = db.iloc[index, :]
-
-        annotations = ds["Annotation"]
-        classification = int(ds["Classification"])
-        width = ds["Width"]
-        height = ds["Height"]
-
-        base_name = f"{index:0{len(str(len(db)))}}"
-        image_path = os.path.join(image_path, base_name) + ".jpg"
-        label_path = os.path.join(annotation_path, base_name) + ".txt"
-
-        logger.info("Exporting row: {} using base name: {}.", index, base_name)
-
-        logger.debug("Loading image for row: {} with file name: {}.", index,
-                     ds["File Path"])
-
-        attrs, arr = read_from_dataset(index, db, ignore_windowing=True)
-        image = format_as(attrs, arr, resize_width, resize_height)
-
-        logger.debug("Saving image for row: {} to: {}.", index, image_path)
-        image.save(image_path)
-        print("Wrote: {} successfully.", image_path)
-
-        logger.debug("Creating YOLO annotation for row: {}.", index)
-
-        if resize_width or resize_height:
-            logger.debug("Scaling annotation coordinates to new image size: "
-                         "{}x{} -> {}x{}.", width, height, image.width,
-                         image.height)
-            annotations = transform_coordinate_collection(annotations,
-                                                          width, height,
-                                                          image.width,
-                                                          image.height)
-
-        txts = create_annotations(classification, annotations, width, height)
-
-        logger.debug("Saving YOLO annotation for row: {} to: {}.", index,
-                     label_path)
-        with open(label_path, "w") as label:
-            for txt in txts:
-                print(txt, file=label)
-
-        logger.debug("Wrote: {} successfully.", label_path)
-    except Exception as ex:
-        if skip_broken:
-            logger.warning("Could not create YOLO entry for index: {}.", index)
-            logger.warning("  Reason: {}.", ex)
-        else:
-            raise YOLOEntryFormatError(index, db["File Path"][index]) from ex
+    return [
+        (x_max + x_min) / (2.0 * width),
+        (y_max + y_min) / (2.0 * height),
+        (x_max - x_min) / width,
+        (y_max - y_min) / height
+    ]
 
 
 def write_auxiliary_files(dir_path, class_names):
