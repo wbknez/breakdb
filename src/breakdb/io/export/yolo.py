@@ -36,14 +36,16 @@ class YOLODatabaseEntryExporter(DatabaseEntryExporter):
 
         return annotation_dir, image_dir, base_dir
 
-    def export(self, ds, name, base_dir, target_width=None, target_height=None,
+    def export(self, entry, base_dir, target_width=None, target_height=None,
                ignore_scaling=False, ignore_windowing=True,
                keep_aspect_ratio=True, no_upscale=False, skip_broken=False):
         logger = logging.getLogger(__name__)
 
+        ds, name = entry
+
         try:
             annotation_path = os.path.join(base_dir, "labels", name) + ".txt"
-            image_path = os.path.join(ds.FilePath, "images", name) + ".jpg"
+            image_path = os.path.join(base_dir, "images", name) + ".jpg"
 
             logger.info("Exporting database entry: {}.", name)
             logger.debug("Exporting image for: {} to: {}.", name, image_path)
