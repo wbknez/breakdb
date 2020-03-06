@@ -6,8 +6,8 @@ The main driver for the fracture (break) detection database project.
 import sys
 from argparse import ArgumentParser
 
-from breakdb.action import print_tags, create_database, export_database, \
-    convert_to_voc, convert_to_yolo
+from breakdb.action import print_tags, create_database, convert_database, \
+    export_database
 from breakdb.util import initialize_logging, supports_color_output
 
 
@@ -32,59 +32,17 @@ def parse_args():
 
     subparsers = parser.add_subparsers(dest="subparsers", required=True)
 
-    convert_voc = subparsers.add_parser(name="convert-to-voc",
-                                        description="convert a database to "
-                                                    "Pascal VOC format with "
-                                                    "associated file structure")
+    convert = subparsers.add_parser(name="convert",
+                                   description="convert a database in one "
+                                               "format to another")
 
-    convert_voc.set_defaults(func=convert_to_voc)
+    convert.set_defaults(func=convert_database)
 
-    convert_voc.add_argument("-d", "--directory", type=str,
-                             help="base directory for Pascal VOC hierarchy",
-                             required=True)
-    convert_voc.add_argument("-p", "--parallel", type=int,
-                             help="number of parallel processes", default=2)
-    convert_voc.add_argument("--resize-height", type=int,
-                             help="height to resize all images to",
-                             default=None)
-    convert_voc.add_argument("--resize-width", type=int,
-                             help="width to resize all images to",
-                             default=None)
-    convert_voc.add_argument("-s", "--skip-broken", action="store_true",
-                             help="ignore malformed DICOM files",
-                             default=False)
-    convert_voc.add_argument("DATABASE", type=str,
-                             help="path to database to convert")
+    convert.add_argument("-o", "--output", type=str,
+                        help="file to output database to", required=True)
 
-    convert_voc = subparsers.add_parser(name="convert",
-                                        description="convert a database to "
-                                                    "Pascal VOC format with "
-                                                    "associated file structure")
-
-    convert_yolo = subparsers.add_parser(name="convert-to-yolo",
-                                         description="convert a database to "
-                                                     "YOLOv3 custom format "
-                                                     "with associated file "
-                                                     "structure")
-
-    convert_yolo.set_defaults(func=convert_to_yolo)
-
-    convert_yolo.add_argument("-d", "--directory", type=str,
-                             help="base directory for Pascal VOC hierarchy",
-                             required=True)
-    convert_yolo.add_argument("-p", "--parallel", type=int,
-                             help="number of parallel processes", default=2)
-    convert_yolo.add_argument("--resize-height", type=int,
-                             help="height to resize all images to",
-                             default=None)
-    convert_yolo.add_argument("--resize-width", type=int,
-                             help="width to resize all images to",
-                             default=None)
-    convert_yolo.add_argument("-s", "--skip-broken", action="store_true",
-                             help="ignore malformed DICOM files",
-                             default=False)
-    convert_yolo.add_argument("DATABASE", type=str,
-                             help="path to database to convert")
+    convert.add_argument("FILE", type=str,
+                        help="database file to convert")
 
     create = subparsers.add_parser(name="create",
                                    description="create a database from one "
@@ -106,16 +64,39 @@ def parse_args():
                         help="directories containing one or more DICOM files")
 
     export = subparsers.add_parser(name="export",
-                                   description="export a database in one "
-                                               "format to another")
+                                   description="export a database to the "
+                                               "file system in a specific "
+                                               "format")
 
     export.set_defaults(func=export_database)
 
-    export.add_argument("-o", "--output", type=str,
-                        help="file to output database to", required=True)
+    export.add_argument("-d", "--directory", required=True)
+    export.add_argument("-f", "--force", action="store_true", default=False,
+                        help="overwrite existing files and directories")
+    export.add_argument("-n", "--no-master-list", action="store_true",
+                        default=False, help="do not produce a master list")
+    export.add_argument("-p", "--parallel", type=int,
+                        help="number of parallel processes", default=2)
+    export.add_argument("-s", "--skip-broken", action="store_true",
+                        help="ignore malformed DICOM files", default=False)
+    export.add_argument("-t", "--type", type=str, choices=["voc", "yolov3"],
+                        required=True, help="the export format type")
 
-    export.add_argument("FILE", type=str,
-                        help="database file to convert")
+    export.add_argument("--keep-aspect-ratio", action="store_true",
+                        default=False, help="force resizing to obey aspect "
+                                            "ratio")
+    export.add_argument("--ignore-scaling", action="store_true",
+                        default=False, help="ignore scaling parameters")
+    export.add_argument("--ignore-windowing", action="store_true",
+                        default=False, help="ignore windowing parameters")
+    export.add_argument("--no-upscale", action="store_true", default=False,
+                        help="disallow image upscaling")
+    export.add_argument("--target-height", type=int, default=None,
+                        help="target image height")
+    export.add_argument("--target-width", type=int, default=None,
+                        help="target image width")
+
+    export.add_argument("FILE", type=str, help="database file to export")
 
     tags = subparsers.add_parser(name="print-tags",
                                  description="show all DICOM metadata tags "
