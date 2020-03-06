@@ -3,14 +3,8 @@ Contains unit tests to ensure bounding boxes are converted correctly from
 a DICOM annotation to a YOLO compatible format.
 """
 import numpy as np
-import pytest
 
-from breakdb.io.export.yolo import YOLOAnnotationExporter
-
-
-@pytest.fixture()
-def exporter():
-    return YOLOAnnotationExporter()
+from breakdb.io.export.yolo import create_bounding_box
 
 
 class TestCreateBoundingBox:
@@ -18,7 +12,7 @@ class TestCreateBoundingBox:
     Test suite for :function: 'create_bounding_box'.
     """
 
-    def test_create_bounding_box_scales_appropriately(self, exporter):
+    def test_create_bounding_box_scales_appropriately(self):
         width = np.random.randint(100, 1920)
         height = np.random.randint(100, 1200)
 
@@ -31,7 +25,7 @@ class TestCreateBoundingBox:
         y_max = np.max(y)
         y_min = np.min(y)
 
-        bndbox = exporter.create_bounding_box(coords, width, height)
+        bndbox = create_bounding_box(coords, width, height)
         expected = [
             (x_max + x_min) / (2.0 * width),
             (y_max + y_min) / (2.0 * height),

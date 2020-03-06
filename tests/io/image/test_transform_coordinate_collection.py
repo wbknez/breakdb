@@ -74,7 +74,7 @@ class TestTransformCoordinateCollection:
         width = np.random.randint(100, 1920)
         height = np.random.randint(100, 1200)
 
-        target_width = np.random.randint(width + 1, 1340)
+        target_width = np.random.randint(width + 1, 3840)
         target_height = np.random.randint(height + 1, 2400)
 
         resize_width = np.random.randint(width + 1, target_width - 1)

@@ -19,8 +19,8 @@ from breakdb.io.image import transform_coordinate_collection
 
 class YOLODatabaseEntryExporter(DatabaseEntryExporter):
     """
-    Represents a way to export a single entry of a collated DICOM database
-    to the format used by a PyTorch YOLOv3 algorithm.
+    Represents a mechanism to export a single entry of a collated DICOM
+    database to the format used by a PyTorch YOLOv3 algorithm.
     """
 
     def __init__(self):
@@ -46,8 +46,8 @@ class YOLODatabaseEntryExporter(DatabaseEntryExporter):
             image_path = os.path.join(ds.FilePath, "images", name) + ".jpg"
 
             logger.info("Exporting database entry: {}.", name)
-
             logger.debug("Exporting image for: {} to: {}.", name, image_path)
+
             dims, transform = export_image(ds, image_path, target_width,
                                            target_height, ignore_scaling,
                                            ignore_windowing, keep_aspect_ratio,

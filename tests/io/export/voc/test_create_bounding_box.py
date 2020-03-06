@@ -5,15 +5,9 @@ a DICOM annotation to a Pascal VOC compatible format.
 from xml.etree.ElementTree import Element, SubElement
 
 import numpy as np
-import pytest
 
-from breakdb.io.export.voc import VOCAnnotationExporter
+from breakdb.io.export.voc import create_bounding_box
 from tests.helpers.xml import match
-
-
-@pytest.fixture()
-def exporter():
-    return VOCAnnotationExporter()
 
 
 class TestCreateBoundingBox:
@@ -21,12 +15,12 @@ class TestCreateBoundingBox:
     Test suite for :function: 'create_bounding_box'.
     """
 
-    def test_create_bounding_box_computes_extrema_correctly(self, exporter):
+    def test_create_bounding_box_computes_extrema_correctly(self):
         coords = np.random.randint(0, 1200, 10)
         x = coords[0::2]
         y = coords[1::2]
 
-        bndbox = exporter.create_bounding_box(coords)
+        bndbox = create_bounding_box(coords)
 
         x_max = bndbox.findall('xmax')[0]
         y_max = bndbox.findall('ymax')[0]
@@ -38,12 +32,12 @@ class TestCreateBoundingBox:
         assert int(x_min.text) == np.min(x)
         assert int(y_min.text) == np.min(y)
 
-    def test_create_bounding_box_creates_well_formed_xml(self, exporter):
+    def test_create_bounding_box_creates_well_formed_xml(self):
         coords = np.random.randint(0, 1200, 10)
         x = coords[0::2]
         y = coords[1::2]
 
-        bndbox = exporter.create_bounding_box(coords)
+        bndbox = create_bounding_box(coords)
         expected = Element('bndbox')
 
         x_min = SubElement(expected, "xmin")

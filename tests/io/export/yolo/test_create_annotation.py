@@ -28,8 +28,8 @@ class TestCreateAnnotation:
 
         coords = [coord for coords in zip(x, y) for coord in coords]
         bndbox = [
-            (x_max - x_min) / (2.0 * width),
-            (y_max - y_min) / (2.0 * height),
+            (x_max + x_min) / (2.0 * width),
+            (y_max + y_min) / (2.0 * height),
             (x_max - x_min) / width,
             (y_max - y_min) / height
         ]
@@ -70,8 +70,8 @@ class TestCreateAnnotation:
             coords.append([coord for coords in zip(x, y) for coord in coords])
 
             bndbox = [
-                (x_max - x_min) / (2.0 * width),
-                (y_max - y_min) / (2.0 * height),
+                (x_max + x_min) / (2.0 * width),
+                (y_max + y_min) / (2.0 * height),
                 (x_max - x_min) / width,
                 (y_max - y_min) / height
             ]

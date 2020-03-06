@@ -1,5 +1,6 @@
 """
-
+Contains classes and functions related to exporting collated DICOM databases to
+different file structures.
 """
 import os
 import shutil
@@ -95,7 +96,7 @@ def export_image(ds, file_path, target_width=None, target_height=None,
 
     image.save(file_path)
 
-    return (image.width, image.height), transform
+    return (image.width, image.height, attrs[2]), transform
 
 
 def make_directory(dir_path, force=False):
