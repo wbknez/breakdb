@@ -13,10 +13,8 @@ import pandas as pd
 from pydicom import dcmread
 
 from breakdb.io import filter_files, COLUMN_NAMES, write_database, \
-    read_database
-from breakdb.io.export import yolo, voc
-from breakdb.io.export.voc import convert_entry_to_voc
-from breakdb.io.export.yolo import convert_entry_to_yolo, write_auxiliary_files
+    read_database, get_entry_exporter
+from breakdb.io.export import get_database_entries
 from breakdb.merge import organize_parsed, merge_dicom
 from breakdb.parse import parse_dicom
 from breakdb.util import format_dataset
@@ -96,9 +94,9 @@ def create_database(args):
         return ExitCode.FAILURE
 
 
-def export_database(args):
+def convert_database(args):
     """
-    Exports a user-specified database in one format to another.
+    Converts a user-specified database in one format to another.
 
     :param args: The user-chosen options to use.
     :return: An exit code (0 if success, otherwise 1).
@@ -111,6 +109,75 @@ def export_database(args):
         return ExitCode.SUCCESS
     except Exception as ex:
         logger.error("Could not convert database to alternate format: {}.", ex)
+
+        if not args.quiet and args.verbose:
+            print()
+            print("Stack trace:")
+            print_exc()
+
+        return ExitCode.FAILURE
+
+
+def export_database(args):
+    """
+    Exports a user-specified database in a specific format to the local
+    filesystem.
+
+    :param args: The user-chosen options to use.
+    :return: An exit code (0 if success, otherwise 1).
+    """
+    logger = logging.getLogger(__name__)
+
+    try:
+        exporter = get_entry_exporter(args.type)
+
+        logger.info("Exporting database: {} to format: {}.", args.FILE,
+                    args.type)
+        logger.debug("Loading database: {}.", args.FILE)
+
+        db = read_database(args.FILE)
+
+        logger.debug("Creating directory structure in: {}.", args.directory)
+
+        annot_dir, image_dir, master_dir = exporter.create_directory_structure(
+            args.directory, args.force
+        )
+
+        logger.debug("Annotation directory: {}.", annot_dir)
+        logger.debug("Image directory: {}.", image_dir)
+        logger.debug("Master List directory: {}.", master_dir)
+
+        with Pool(processes=args.parallel) as pool:
+            fs_exporter = partial(exporter.export,
+                                  base_dir=args.directory,
+                                  target_width=args.target_width,
+                                  target_height=args.target_height,
+                                  ignore_scaling=args.ignore_scaling,
+                                  ignore_windowing=args.ignore_windowing,
+                                  keep_aspect_ratio=args.keep_aspect_ratio,
+                                  no_upscale=args.no_upscale,
+                                  skip_broken=args.skip_broken)
+
+            logger.debug("Beginning exportation of: {} entries.", len(db))
+
+            file_list = pool.map(fs_exporter, get_database_entries(db))
+            file_list = list(filter(None, file_list))
+
+            logger.debug("Exported: {} of: {} origin entries.",
+                         len(file_list), len(db))
+
+            if not args.no_master_list:
+                logger.debug("Writing master list.")
+
+                master_list = pd.DataFrame(file_list,
+                                           columns=["File", "Classification"])
+                master_path = os.path.join(master_dir, "master_list.csv")
+
+                master_list.to_csv(master_path, sep=",")
+
+                logger.debug("Wrote master list to: {}.", master_path)
+    except Exception as ex:
+        logger.error("Could not export database: {}.", ex)
 
         if not args.quiet and args.verbose:
             print()
@@ -142,76 +209,5 @@ def print_tags(args):
         return ExitCode.SUCCESS
     except Exception as ex:
         logger.error("Could not read metadata: {}.", ex)
-
-        return ExitCode.FAILURE
-
-
-def convert_to_voc(args):
-    """
-    Converts a collated DICOM database into a Pascal VOC dataset, annotating
-    each entry and processing each image as appropriate.
-
-    :param args: The user-chosen options to use.
-    :return: An exit code (0 if success, otherwise 1).
-    """
-    logger = logging.getLogger(__name__)
-
-    try:
-        logger.info("Creating VOC directory structure in: {}.", args.directory)
-        voc.create_directory_structure(args.directory)
-
-        db = read_database(args.DATABASE)
-        converter = partial(convert_entry_to_voc, db=db,
-                            annotation_path=os.path.join(args.directory,
-                                                        "Annotations"),
-                            image_path=os.path.join(args.directory,
-                                                   "JPEGImages"),
-                            resize_width=args.resize_width,
-                            resize_height=args.resize_height,
-                            skip_broken=args.skip_broken)
-
-        with Pool(processes=args.parallel) as pool:
-            pool.map(converter, range(len(db)))
-
-            logger.info("Converted {} entries to Pascal VOC format.", len(db))
-    except Exception as ex:
-        logger.error("Could not create VOC dataset: {}.", ex)
-
-        return ExitCode.FAILURE
-
-
-def convert_to_yolo(args):
-    """
-    Converts a collated DICOM database into a YOLOv3 custom dataset, annotating
-    each entry and processing each image as appropriate.
-
-    :param args: The user-chosen options to use.
-    :return: An exit code (0 if success, otherwise 1).
-    """
-    logger = logging.getLogger(__name__)
-
-    try:
-        logger.info("Creating yolo directory structure in: {}.", args.directory)
-        yolo.create_directory_structure(args.directory)
-
-        db = read_database(args.DATABASE)
-        converter = partial(convert_entry_to_yolo, db=db,
-                            annotation_path=os.path.join(args.directory,
-                                                         "labels"),
-                            image_path=os.path.join(args.directory,
-                                                    "images"),
-                            resize_width=args.resize_width,
-                            resize_height=args.resize_height,
-                            skip_broken=args.skip_broken)
-
-        with Pool(processes=args.parallel) as pool:
-            pool.map(converter, range(len(db)))
-
-            logger.debug("Writing auxiliary file(s).")
-            write_auxiliary_files(args.directory, ["negative", "positive"])
-
-            logger.info("Converted {} entries to Pascal yolo format.", len(db))
-    except Exception as ex:
-        logger.error("Could not create yolo dataset: {}.", ex)
 
         return ExitCode.FAILURE
