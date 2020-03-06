@@ -3,10 +3,19 @@ Contains classes and functions pertaining to database serialization.
 """
 import os
 
+from breakdb.io.export.voc import VOCDatabaseEntryExporter
+from breakdb.io.export.yolo import YOLODatabaseEntryExporter
 from breakdb.io.reading import CsvDatabaseReader, ExcelDatabaseReader, \
     JsonDatabaseReader
 from breakdb.io.writing import CsvDatabaseWriter, ExcelDatabaseWriter, \
     JsonDatabaseWriter
+
+
+_EXPORTERS = {
+    "voc": VOCDatabaseEntryExporter(),
+    "yolov3": YOLODatabaseEntryExporter()
+}
+
 
 _READERS = {
     ".csv": CsvDatabaseReader(),
@@ -63,6 +72,21 @@ def filter_files(paths, extensions=None, relative=False):
                 for extension in extensions:
                     if file.endswith(extension):
                         yield os.path.join(root, file)
+
+
+def get_entry_exporter(format_name):
+    """
+    Searches for and returns the database entry exporter associated with the
+    specified format name.
+
+    :param format_name: The file format to use.
+    :return: A database entry exporter.
+    """
+    if format_name not in _EXPORTERS:
+        raise KeyError(f"Cannot find exporter - unknown format: "
+                       f"{format_name}.")
+
+    return _EXPORTERS[format_name]
 
 
 def read_database(file_path):
