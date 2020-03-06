@@ -53,7 +53,9 @@ setup(
         'radiography', 'databases', 'dicom'
     ],
     install_requires=[
+        'numpy',
         'pandas',
+        'pillow',
         'pydicom',
         'pytest'
     ],
