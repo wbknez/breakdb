@@ -88,8 +88,14 @@ def compute_resize_transform(width, height, target_width, target_height,
     :return: The origin (x- and y-axis) and scaling coefficients (width and
     height) as a pair of tuples.
     """
-    origin_x = (target_width - resize_width) / 2.0
-    origin_y = (target_height - resize_height) / 2.0
+    if not target_height:
+        target_height = resize_height
+
+    if not target_width:
+        target_width = resize_width
+
+    origin_x = int((target_width - resize_width) / 2.0)
+    origin_y = int((target_height - resize_height) / 2.0)
     width_ratio = resize_width / width
     height_ratio = resize_height / height
 
@@ -280,7 +286,7 @@ def read_from_dataset(ds, coerce_to_original_data_type=False,
     :return: A pair containing basic image attributes as a tuple and an
     array of image pixel data.
     """
-    file_path = ds.FilePath
+    file_path = ds["File Path"]
     img = Dataset()
 
     with dcmread(file_path, specific_tags=IMAGE_TAGS) as meta:
