@@ -6,7 +6,6 @@ import os
 import shutil
 from abc import ABCMeta, abstractmethod
 
-
 from breakdb.io.image import read_from_dataset, format_as
 
 
@@ -43,14 +42,14 @@ class DatabaseEntryExporter(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def export(self, ds, name, base_dir, target_width=None, target_height=None,
+    def export(self, entry, base_dir, target_width=None, target_height=None,
                ignore_scaling=False, ignore_windowing=True,
                keep_aspect_ratio=True, no_upscale=False, skip_broken=False):
         """
         Exports the specified database entry
 
-        :param ds: The DICOM dataset to use.
-        :param name: The base name to use for exportation.
+        :param entry: A tuple of the DICOM database entry to export and the
+        name to use.
         :param base_dir: The directory in which to export the entry.
         :param target_width: The maximum width to resize the image to.
         :param target_height: The maximum height to resize the image to.
@@ -97,6 +96,19 @@ def export_image(ds, file_path, target_width=None, target_height=None,
     image.save(file_path)
 
     return (image.width, image.height, attrs[2]), transform
+
+
+def get_database_entries(db):
+    """
+    Provides a generator to iterate over the specified collated DICOM database
+    and returns each entry as well as an associated name for file operations.
+
+    :param db: The DICOM database to use.
+    :return: A tuple containing a single database entry and a unique name
+    for file operations.
+    """
+    for index in range(len(db)):
+        yield db.iloc[index, :], f"{index:0{len(str(len(db)))}}"
 
 
 def make_directory(dir_path, force=False):
