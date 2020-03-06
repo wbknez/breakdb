@@ -6,37 +6,68 @@ import logging
 import os
 from xml.etree.ElementTree import Element, ElementTree
 
-from breakdb.io.export import AnnotationExporter
-from breakdb.io.image import read_from_dataset, format_as, \
-    transform_coordinate_collection
+from breakdb.io.export import DatabaseEntryExporter, make_directory, \
+    ExportEntryFormatError, export_image
+from breakdb.io.image import transform_coordinate_collection
 
 
-class VOCEntryFormatError(Exception):
+class VOCDatabaseEntryExporter(DatabaseEntryExporter):
     """
-    Represents an exception that is raised when an error is encountered
-    while attempting to format a DICOM database entry as a Pascal VOC dataset.
-    """
-
-    def __init__(self, index, file_path):
-        super().__init__(f"Could not format row {index} as a Pascal VOC entry "
-                         f"with image: {file_path}.")
-
-
-class VOCAnnotationExporter(AnnotationExporter):
+    Represents a mechanism to export a single entry of a collated DICOM
+    database to the Pascal VOC format.
     """
 
-    """
+    def create_directory_structure(self, base_dir, force=False):
+        annotation_dir = os.path.join(base_dir, "Annotations")
+        image_dir = os.path.join(base_dir, "JPEGImages")
+        master_dir = os.path.join(base_dir, "ImageSets")
 
-    def create_bounding_box(self, coords, width=None, height=None):
-        x = [value for value in coords[0::2]]
-        y = [value for value in coords[1::2]]
+        make_directory(annotation_dir, force)
+        make_directory(image_dir, force)
+        make_directory(master_dir, force)
+        make_directory(os.path.join(master_dir, "Main"), force)
 
-        return create_element("bndbox", children=[
-            create_element("xmin", text_value=str(min(x))),
-            create_element("ymin", text_value=str(min(y))),
-            create_element("xmax", text_value=str(max(x))),
-            create_element("ymax", text_value=str(max(y))),
-        ])
+        return base_dir, annotation_dir, image_dir, master_dir
+
+    def export(self, ds, name, base_dir, target_width=None, target_height=None,
+               ignore_scaling=False, ignore_windowing=True,
+               keep_aspect_ratio=True, no_upscale=False, skip_broken=False):
+        logger = logging.getLogger(__name__)
+
+        try:
+            annotation_path = os.path.join(base_dir, "Annotations", name) + \
+                ".xml"
+            image_path = os.path.join(ds.FilePath, "JPEGImages", name) + \
+                ".jpg"
+
+            logger.info("Exporting database entry: {}.", name)
+            logger.debug("Exporting image for: {} to: {}.", name, image_path)
+
+            dims, transform = export_image(ds, image_path, target_width,
+                                           target_height, ignore_scaling,
+                                           ignore_windowing, keep_aspect_ratio,
+                                           no_upscale)
+
+            logger.debug("Exporting annotations for: {} to: {}.", name,
+                         annotation_path)
+
+            ds.Annotation = transform_coordinate_collection(ds.Annotation,
+                                                            transform[0],
+                                                            transform[1])
+            xml = create_annotation(annotation_path, dims[0], dims[1],
+                                    dims[2], ds.Annotation)
+
+            ElementTree(xml).write(annotation_path)
+
+            return annotation_path, int(ds.Classification)
+        except Exception as ex:
+            if skip_broken:
+                logger.warning("Could not export database entry: {}.", name)
+                logger.warning("  Reason: {}.", ex)
+
+                return ()
+            else:
+                raise ExportEntryFormatError(name, "Pascal VOC") from ex
 
 
 def create_annotation(file_path, width, height, depth, annotations):
@@ -152,68 +183,3 @@ def create_object(name, coords):
         create_element("difficult", text_value="0"),
         create_bounding_box(coords)
     ])
-
-
-def convert_entry_to_voc(index, db, annotation_path, image_path,
-                         resize_width=None, resize_height=None,
-                         skip_broken=False):
-    """
-    Converts a single entry with the specified index in the specified
-    database to a Pascal VOC compatible annotation with associated image
-    that is stored in the specified path.
-
-    :param index: The (row) index to use.
-    :param db: The database to search.
-    :param annotation_path: The Pascal VOC annotation storage path.
-    :param image_path: The Pascal VOC image storage path.
-    :param resize_width: The width to resize the image to (optional).
-    :param resize_height: The height to resize the image to (optional).
-    :param skip_broken: Whether or not to ignore malformed datasets.
-    """
-    logger = logging.getLogger(__name__)
-
-    try:
-        ds = db.iloc[index, :]
-
-        coords = ds["Annotation"]
-        width = ds["Width"]
-        height = ds["Height"]
-
-        base_name = f"{index:0{len(str(len(db)))}}"
-        image_path = os.path.join(image_path, base_name) + ".jpg"
-        xml_path = os.path.join(annotation_path, base_name) + ".xml"
-
-        logger.info("Exporting row: {} using base name: {}.", index, base_name)
-
-        logger.debug("Loading image for row: {} with file name: {}.", index,
-                     ds["File Path"])
-        attrs, arr = read_from_dataset(ds, ignore_windowing=True)
-        image = format_as(attrs, arr, resize_width, resize_height)
-
-        logger.debug("Saving image for row: {} to: {}.", index, image_path)
-        image.save(image_path)
-        print("Wrote: {} successfully.", image_path)
-
-        logger.debug("Creating VOC annotation for row: {}.", index)
-
-        if resize_width or resize_height:
-            logger.debug("Scaling annotation coordinates to new image size: "
-                         "{}x{} -> {}x{}.", width, height, image.width,
-                         image.height)
-            coords = transform_coordinate_collection(coords, width,
-                                                     height, image.width,
-                                                     image.height)
-
-        xml = create_annotation(xml_path, image.width, image.height,
-                                1 if image.mode == "L" else 3, coords)
-
-        logger.debug("Saving VOC annotation for row: {} to: {}.", index,
-                     xml_path)
-        ElementTree(xml).write(xml_path)
-    except Exception as ex:
-        if skip_broken:
-            logger.warning("Could not create Pascal VOC entry for index: {}.",
-                           index)
-            logger.warning("  Reason: {}.", ex)
-        else:
-            raise VOCEntryFormatError(index, db["File Path"][index]) from ex
