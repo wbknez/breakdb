@@ -13,6 +13,7 @@ from breakdb.tag import CommonTag, ReferenceTag, AnnotationTag, get_tag, \
     MiscTag, check_tag, check_sequence_length, WindowingTag, make_tag_list
 
 ALL_TAGS = make_tag_list(
+    AnnotationTag.SEQUENCE,
     CommonTag.SOP_CLASS,
     CommonTag.SOP_INSTANCE,
     CommonTag.SERIES,
@@ -27,10 +28,6 @@ ALL_TAGS = make_tag_list(
     PixelTag.ROWS,
     PixelTag.SAMPLES_PER_PIXEL,
     ReferenceTag.SEQUENCE,
-    ReferenceTag.OBJECT,
-    ReferenceTag.SOP_CLASS,
-    ReferenceTag.SOP_INSTANCE,
-    ReferenceTag.SERIES,
     ScalingTag.INTERCEPT,
     ScalingTag.SLOPE,
     ScalingTag.TYPE,
