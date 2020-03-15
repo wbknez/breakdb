@@ -51,6 +51,8 @@ def parse_args():
 
     create.set_defaults(func=create_database)
 
+    create.add_argument("-i", "--ignore-duplicates", action="store_true",
+                        help="ignore duplicate DICOMs", default=False)
     create.add_argument("-o", "--output", type=str,
                         help="file to output database to", required=True)
     create.add_argument("-p", "--parallel", type=int,

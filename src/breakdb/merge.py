@@ -10,6 +10,17 @@ from breakdb.tag import has_tag, get_tag, CommonTag, AnnotationTag, \
 from breakdb.util import remove_duplicates
 
 
+class DuplicateDICOM(Exception):
+    """
+    Represents an exception that is raised alongside a :class: 'TagConflict'
+    for pixel data only.
+    """
+
+    def __init__(self, uid, original, duplicate):
+        super().__init__(f"Duplicate image found for: {uid}.\n"
+                         f"  Pixel data in: {original} and: {duplicate}.")
+
+
 class MergingError(Exception):
     """
     Represents an exception that is raised when a problem is encountered
@@ -120,6 +131,7 @@ def merge_dataset(src, dest):
     :param src: The source dataset to search.
     :param dest: The destination dataset to write to.
     :return: A modified destination dataset.
+    :raises DuplicateDICOM: If conflicting pixel data tags are found.
     :raises TagConflict: If a source tag conflicts with a previously set
     destination.
     """
@@ -130,7 +142,6 @@ def merge_dataset(src, dest):
         CommonTag.STUDY,
         MiscTag.BODY_PART,
         PixelTag.COLUMNS,
-        PixelTag.DATA,
         PixelTag.ROWS,
         ScalingTag.INTERCEPT,
         ScalingTag.SLOPE,
@@ -144,16 +155,25 @@ def merge_dataset(src, dest):
 
     dest.update(merge_sequence(src, dest, AnnotationTag.SEQUENCE))
 
+    try:
+        dest.update(merge_tag(src, dest, PixelTag.DATA))
+    except TagConflict:
+        raise DuplicateDICOM(get_tag(dest, CommonTag.SOP_INSTANCE),
+                             get_tag(dest, PixelTag.DATA),
+                             get_tag(src, PixelTag.DATA))
+
     return dest
 
 
-def merge_dicom(parsed, skip_broken):
+def merge_dicom(parsed, skip_broken, ignore_duplicates=False):
     """
     Attempts to merge all of the specified parsed datasets into a single
     database entry.
 
     :param parsed: The collection of parsed datasets to merge.
     :param skip_broken: Whether or not to ignore malformed datasets.
+    :param ignore_duplicates: Whether or not to ignore duplicate but
+    mismatched pixel data entries.
     :return: A collection of relevant DICOM tags.
     :raises MissingTag: If a requested tag could not be found.
     :raises TagConflict: If a source tag conflicts with a previously set
@@ -169,6 +189,11 @@ def merge_dicom(parsed, skip_broken):
     for ds in to_merge:
         try:
             merged = merge_dataset(ds, merged)
+        except DuplicateDICOM as dd:
+            if ignore_duplicates:
+                logger.warning(dd)
+            else:
+                raise MergingError(uid[0]) from dd
         except TagConflict as tc:
             if skip_broken:
                 logger.warning("Could not merge datasets for: {}.", uid[0])

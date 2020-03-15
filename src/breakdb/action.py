@@ -47,7 +47,8 @@ def create_database(args):
     logger = logging.getLogger(__name__)
 
     parser = partial(parse_dicom, skip_broken=args.skip_broken)
-    merger = partial(merge_dicom, skip_broken=args.skip_broken)
+    merger = partial(merge_dicom, skip_broken=args.skip_broken,
+                     ignore_duplicates=args.ignore_duplicates)
 
     try:
         with Pool(processes=args.parallel) as pool:
