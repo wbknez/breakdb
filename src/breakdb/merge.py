@@ -191,7 +191,8 @@ def merge_dicom(parsed, skip_broken, ignore_duplicates=False):
             merged = merge_dataset(ds, merged)
         except DuplicateDICOM as dd:
             if ignore_duplicates:
-                logger.warning(dd)
+                logger.warning("Did not merge datasets from duplicate DICOMs.")
+                logger.warning("  Reason: {}.", dd)
             else:
                 raise MergingError(uid[0]) from dd
         except TagConflict as tc:
