@@ -37,8 +37,8 @@ class TestComputeResizeTransform:
                                                   resize_height)
 
         expected_origin = (
-            (target_width - resize_width) / 2.0,
-            (target_height - resize_height) / 2.0
+            int((target_width - resize_width) / 2.0),
+            int((target_height - resize_height) / 2.0)
         )
         expected_ratios = (resize_width / width, resize_height / height)
 

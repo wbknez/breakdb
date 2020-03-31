@@ -112,9 +112,6 @@ def create_annotations(classification, annotations, width, height):
     :param height: The height of an annotated image.
     :return: A collection of YOLOv3 annotations.
     """
-    if not annotations:
-        return ["0 0.0 0.0 0.0 0.0"]
-
     txts = []
 
     for annot in annotations:

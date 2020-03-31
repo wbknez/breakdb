@@ -39,16 +39,6 @@ class TestCreateAnnotation:
 
         assert annotation == expected
 
-    def test_create_annotations_creates_blank_with_empty_coordinates(self):
-        classification = np.random.choice([0, 1], 1)[0]
-        width = np.random.randint(100, 1920)
-        height = np.random.randint(100, 1200)
-
-        expected = ["0 0.0 0.0 0.0 0.0"]
-        annotations = create_annotations(classification, [], width, height)
-
-        assert annotations == expected
-
     def test_create_annotations_creates_multiple_annotations(self):
         classification = np.random.choice([0, 1], 1)[0]
         width = np.random.randint(100, 1920)
