@@ -55,18 +55,21 @@ class YOLODatabaseEntryExporter(DatabaseEntryExporter):
                                            ignore_windowing, keep_aspect_ratio,
                                            no_upscale)
 
-            logger.debug("Exporting annotations for: {} to: {}.", name,
-                         annotation_path)
+            if ds.Annotation:
+                logger.debug("Exporting annotations for: {} to: {}.", name,
+                             annotation_path)
 
-            ds.Annotation = transform_coordinate_collection(ds.Annotation,
-                                                            transform[0],
-                                                            transform[1])
-            txts = create_annotations(int(ds.Classification), ds.Annotation,
-                                      dims[0], dims[1])
+                ds.Annotation = transform_coordinate_collection(ds.Annotation,
+                                                                transform[0],
+                                                                transform[1])
+                txts = create_annotations(int(ds.Classification), ds.Annotation,
+                                          dims[0], dims[1])
 
-            with open(annotation_path, "w") as f:
-                for txt in txts:
-                    print(txt, file=f)
+                with open(annotation_path, "w") as f:
+                    for txt in txts:
+                        print(txt, file=f)
+            else:
+                logger.debug("No annotations to export for: {}.", name)
 
             write_auxiliary_files(base_dir, ["negative", "positive"])
 
